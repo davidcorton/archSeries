@@ -4,7 +4,7 @@
 # 2. Context.csv
 # 3. Samples.csv
 # 4. Finds_date.csv
-# Original Excel versions of 2-4 need to be saved as CSV files with the option set to
+# Original Excel versions need to be saved as CSV files with the option set to
 # quote all text variables; otherwise commas in comment fields will be treated as field
 # breaks
 # nb. reading in large xlsx files is extremely slow, xls is much faster but limited to
