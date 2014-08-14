@@ -29,6 +29,7 @@ aorist <- function(data, start.date=0, end.date=2000, bin.width=100, weight=1) {
         }
         if(i/1000 == round(i/1000)) {print(paste(i/nrow(data)*100, "percent complete"))}
     }
+    breaks <<- seq(start.date, end.date, bin.width)
     aoristic.sum
 }
 
@@ -44,7 +45,7 @@ date.simulate <- function(data, start.date=0, end.date=2000, bin.width=100, rep=
     require(data.table)
     data <- data[End >= start.date & Start <= end.date]
     data <- cbind(data, weight)
-    breaks <- seq(start.date, end.date, bin.width)
+    breaks <<- seq(start.date, end.date, bin.width)
     labels <- 1:(length(breaks)-1)
     data <- cbind(rep(1:rep, each=nrow(data)), data)
     data[,bin:={x<-runif(nrow(data)); (x*(data[,End]-data[,Start]))+data[,Start]}]
