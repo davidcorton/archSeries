@@ -14,16 +14,16 @@
 library("data.table")
 
 # Read in data and select relevant columns
-period <- read.csv("Period.csv")
+period <- read.csv("Raw_data/Period.csv")
 period <- data.table(period[,c(1,2,3,5,6,7)])
 setkey(period, Site_P)
-finds <- read.csv("Finds_date.csv")
+finds <- read.csv("Raw_data/Finds_date.csv")
 finds <- data.table(finds[finds$RANGE_DATE>0 & finds$INT_RES=="C",c(3,5,6,7,10,11,12)])
 setkey(finds, SITE_C)
-context <- read.csv("Context.csv")
+context <- read.csv("Raw_data/Context.csv")
 context <- data.table(context[,c(1,2,4,15,16)])
 setkey(context, SITE_C)
-sample <- read.csv("Samples.csv")
+sample <- read.csv("Raw_data/Samples.csv")
 sample <- data.table(sample[,c(2,3,4,7,9,11,13,16,17,18,19,20)])
 setkey(sample, SITE_S)
 

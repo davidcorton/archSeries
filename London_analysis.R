@@ -28,32 +28,32 @@ rm(sample)
 # a) using aoristic sum method (should take 15-20 minutes with default arguments)
 x <- aorist(context.period[, list(Start,End)])
 barplot(x, names.arg=breaks[1:(length(breaks)-1)])
-write.csv(x, "contexts_aoristic_sum_by_period.csv", row.names=FALSE)
+write.csv(x, paste("contexts_aoristic_sum_by_period", params, ".csv",sep=""), row.names=FALSE)
 
 # b) using simulation method (should take 3-5 minutes with default arguments)
 set.seed(1901)
-y <- date.simulate(context.period[, list(Start,End)], rep=500)
-write.csv(y, "contexts_simulated_by_period.csv", row.names=FALSE)
+y <- date.simulate(context.period[, list(Start,End)], rep=500, bin.width=10)
+write.csv(y, paste("contexts_simulated_by_period", params, ".csv",sep=""), row.names=FALSE)
 boxplot(V1 ~ bin, data=y)
-z <- y[,quantile(V1, probs=c(0.05,0.25,0.5,0.75,0.95)), by=bin]
-z[,id:=c(0.05,0.25,0.5,0.75,0.95)]
+z <- y[,quantile(V1, probs=c(0.025,0.25,0.5,0.75,0.975)), by=bin]
+z[,id:=c(0.025,0.25,0.5,0.75,0.975)]
 z <- dcast.data.table(z, bin ~ id, value.var="V1")
-write.csv(z, "summary_context_sim_by_period.csv", row.names=FALSE)
+write.csv(z, paste("summary_context_sim_by_period", params, ".csv",sep=""), row.names=FALSE)
 
 
 # Calculate distribution of SAMPLES across time
-# a) using aoristic sum method (should take 15-20 minutes with default arguments)
+# a) using aoristic sum method (should take 3-5 minutes with default arguments)
 x <- aorist(sample.period[, list(Start,End)])
 barplot(x, names.arg=breaks[1:(length(breaks)-1)])
-write.csv(x, "samples_aoristic_sum_by_period.csv", row.names=FALSE)
+write.csv(x, paste("samples_aoristic_sum_by_period", params, ".csv",sep=""), row.names=FALSE)
 
-# b) using simulation method (should take 3-5 minutes with default arguments)
+# b) using simulation method (should take 10-20 seconds with default arguments)
 set.seed(1982)
-y <- date.simulate(sample.period[, list(Start,End)], rep=500)
-write.csv(y, "samples_simulated_by_period.csv", row.names=FALSE)
+y <- date.simulate(sample.period[, list(Start,End)], rep=500, bin.width=10)
+write.csv(y, paste("samples_simulated_by_period.csv", params, ".csv",sep=""), row.names=FALSE)
 boxplot(V1 ~ bin, data=y)
-z <- y[,quantile(V1, probs=c(0.05,0.25,0.5,0.75,0.95)), by=bin]
-z[,id:=c(0.05,0.25,0.5,0.75,0.95)]
+z <- y[,quantile(V1, probs=c(0.025,0.25,0.5,0.75,0.975)), by=bin]
+z[,id:=c(0.025,0.25,0.5,0.75,0.975)]
 z <- dcast.data.table(z, bin ~ id, value.var="V1")
-write.csv(z, "summary_sample_sim_by_period.csv", row.names=FALSE)
+write.csv(z, paste("summary_sample_sim_by_period", params, ".csv",sep=""), row.names=FALSE)
 
