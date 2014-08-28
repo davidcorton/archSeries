@@ -42,7 +42,11 @@ aorist <- function(data, start.date=0, end.date=2000, bin.width=100, weight=1) {
 }
 
 # Define function to simulate distribution of dates
-# Arguments: 'data' is a data table with two numeric columns called Start and End
+# Arguments: 'data' is a data table with at least two numeric columns called Start and End.
+# If 'data' also has a column called taxon, this can be used with the 'species' argument to
+# select the rows to be included in the simulation.
+# 'species' is a single character value indicating which rows should be included in analysis
+# It will be ignored if no taxon column is provided in 'data', and it defaults to NULL.
 # 'start.date' is a single numeric value for the start of the time period to be analysed
 # 'end.date' is a single numric value for the end end of the time period to be analysed
 # 'bin.width' is a single numeric value setting the resolution of the analysis, in years
@@ -52,9 +56,10 @@ aorist <- function(data, start.date=0, end.date=2000, bin.width=100, weight=1) {
 # Also outputs: 'breaks', a numeric vector of breaks points,
 # 'params', a character value summarising the arguments, for use in naming output files
 
-date.simulate <- function(data, start.date=0, end.date=2000, bin.width=100, rep=100, weight=1) {
+date.simulate <- function(data, species=NULL, start.date=0, end.date=2000, bin.width=100, rep=100, weight=1) {
     require(data.table)
     data <- cbind(data, weight)
+    if(length(species)>0 & "taxon" %in% colnames(data)) {data <- data[taxon==species,]}
     data <- data[End >= start.date & Start <= end.date]
     breaks <<- seq(start.date, end.date, bin.width)
     params <<- paste("_", start.date, "-", end.date, "_by_", bin.width, "_x", rep, sep="")
@@ -76,11 +81,15 @@ date.simulate <- function(data, start.date=0, end.date=2000, bin.width=100, rep=
 #   column ('labels') containing bin labels.
 #   Alternatively, for a uniform dummy set, pass a uniform numeric vector whose length
 #   matches the desired number of bins - e.g. rep(1, 100), where 100 bins are required.
-# 'weight' is a numeric vector represented (weighted) instances to be simulated
+# 'weight' is a numeric vector (or data frame/data.table) representin (weighted) instances
+# to be simulated. If given an additional character column called taxon, this can be used
+# to select rows for analysis using the 'species' argument.
+# 'species' is a single character value indicating rows to be included in analysis. Ignored
+# unless 'weight' has a taxon colum. Defaults to NULL.
 # 'start.date' and 'end.date' are single numeric values. Only required where a single vector
 #   is passed to 'probs' and the range under study is not 0-2000AD.
 
-dummy.simulate <- function(probs, weight, start.date=0, end.date=2000, rep=500) {
+dummy.simulate <- function(probs, weight, species=NULL, start.date=0, end.date=2000, rep=500) {
     require(data.table)
     probs <- data.table(probs)
     if(ncol(probs)==1) {
@@ -94,6 +103,7 @@ dummy.simulate <- function(probs, weight, start.date=0, end.date=2000, rep=500) 
     }
     setnames(probs, c(1,2), c("aoristic.sum", "labels"))
     dummy <- data.table(weight)
+    if(length(species)>0 & "taxon" %in% colnames(weight)) {weight <- weight[taxon==species,]}
     a.sum <- sum(probs$aoristic.sum)
     a.breaks <- c(0, cumsum(probs$aoristic.sum))
     dummy <- cbind(rep(1:rep, each=nrow(dummy)), dummy)
