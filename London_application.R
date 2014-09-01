@@ -38,6 +38,8 @@ write.csv(gms, paste("cod/summary_cod_sim_by_period", params, ".csv",sep=""), ro
 
 # create calibration distribution
 x <- aorist(sample.period[, list(Start,End)], bin.width=bin.width)
+write.csv(x, "aorist_samples_by_50.csv", row.names=FALSE)
+# x <- data.table(read.csv("aorist_samples_by_50.csv"))
 
 # simulate dummy set from calibration distribution
 set.seed(593)
@@ -47,3 +49,7 @@ gms.dummy <- gm.dummy[,quantile(V1, probs=c(0.025,0.25,0.5,0.75,0.975)), by=bin]
 gms.dummy[,id:=c(0.025,0.25,0.5,0.75,0.975)]
 gms.dummy <- dcast.data.table(gms.dummy, bin ~ id, value.var="V1")
 write.csv(gms.dummy, paste("cod/summary_cod_dummy_by_period", params, ".csv",sep=""), row.names=FALSE)
+
+results <- merge(gm, gm.dummy, by=c("rep.no", "bin"), all=TRUE)
+results <- results[is.na(V1.x)==TRUE, V1.x:=0]
+
