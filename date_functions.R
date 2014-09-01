@@ -76,12 +76,12 @@ date.simulate <- function(data, species=NULL, start.date=0, end.date=2000, bin.w
 }
 
 # Define function to simulate a dummy set by sampling from within an aoristic sum output
-# Arguments: 'probs' is a normally a data.table (the output of an aorist call) consisting of
+# Arguments: 'probs' is normally a data.table (the output of an aorist call) consisting of
 #   a numeric column ('aoristic.sum') to be used as relative probabilities, and a character
 #   column ('labels') containing bin labels.
 #   Alternatively, for a uniform dummy set, pass a uniform numeric vector whose length
 #   matches the desired number of bins - e.g. rep(1, 100), where 100 bins are required.
-# 'weight' is a numeric vector (or data frame/data.table) representin (weighted) instances
+# 'weight' is a numeric vector (or data frame/data.table) representing (weighted) instances
 # to be simulated. If given an additional character column called taxon, this can be used
 # to select rows for analysis using the 'species' argument.
 # 'species' is a single character value indicating rows to be included in analysis. Ignored
@@ -114,12 +114,26 @@ dummy.simulate <- function(probs, weight, species=NULL, start.date=0, end.date=2
     dummy[order(rep.no, bin)]
 }
 
-# Function wrapper for the whole analysis. Needs to:
-# - have arguments for: (a) the full fish dataset, (b) the aorist results, (c) field to filter on
-# and (d) filter criterion
-# THEN it runs both date.simulate and dummy.simulate, and compiles the results
+# Define function that performs both 'real' and dummy simulation on target bone data
+# Arguments: 'data' is a data.frame or data.table with columns including Start, End, and
+# Frag. If additional factor columns are provided, these can be used to filter the data
+# using the 'filter.field' and 'filter.values' arguments, below. The function saves both
+# full and summary simulation results to .csv files, and also returns the latter.
+# 'probs' is normally a data.table (the output of an aorist call) consisting of
+#   a numeric column ('aoristic.sum') to be used as relative probabilities, and a character
+#   column ('labels') containing bin labels.
+#   Alternatively, for a uniform dummy set, pass a uniform numeric vector whose length
+#   matches the desired number of bins - e.g. rep(1, 100), where 100 bins are required.
+# 'filter.field' is a single character value denoting the name of a column that will be
+#   used to filter the data. This defaults to "Species" but will be ignored unless 
+#   'filter.values' is set.
+# 'filter.values'is a character vector containing all values of the filter column that will
+#   be included in the analysis. Defaults to NULL.
+# 'quant.list' is a numeric vector of quantiles to be included in the summary output.
+# 'start.date' and 'end.date' are the chronological limits of the overall analysis.
+# 'rep' is the number of times that both 'real' and dummy simulations will be repeated.
 
-arch.simulate <- function(data, probs, filter.field="Species", filter.values=NULL, quant.list=c(0.025,0.25,0.5,0.75,0.975), start.date=0, end.date=2000, rep=1000) {
+freq.simulate <- function(data, probs, filter.field="Species", filter.values=NULL, quant.list=c(0.025,0.25,0.5,0.75,0.975), start.date=0, end.date=2000, rep=1000) {
     require(data.table)
     require(reshape2)
     data <- data.table(data)  #just in case it isn't already in this format
@@ -130,12 +144,12 @@ arch.simulate <- function(data, probs, filter.field="Species", filter.values=NUL
     data <- data[End >= start.date & Start <= end.date]  #drops records outside the date range FROM BOTH SIMULATION SETS
     bin.width <- (end.date-start.date)/nrow(probs)  #sets bin widths (and hence no. of bins) to match the calibration dataset
     
-    # simulate from deal data
+    # simulate from real data
     real <- date.simulate(data=data[,list(Start, End)], weight=data[,Frag], bin.width=bin.width, start.date=start.date, end.date=end.date, rep=rep)
     setnames(real, old="V1", new="real")
     
     # simulate dummy set
-    dummy <- dummy.simulate(probs=probs, weight=data[,weight], start.date=start.date, end.date=end.date, rep=rep)    
+    dummy <- dummy.simulate(probs=probs, weight=data[,Frag], start.date=start.date, end.date=end.date, rep=rep)    
     setnames(dummy, old="V1", new="dummy")
     
     # set up list of all bins and rep no.s
@@ -165,7 +179,9 @@ arch.simulate <- function(data, probs, filter.field="Species", filter.values=NUL
     summary <- cbind(real.summary, dummy.summary)
     
     #save summary dataset
-    write.csv(summary, paste("TEST_", filter.values[1], "_simulated_by_period", params, ".csv", sep=""), row.names=FALSE)
+    write.csv(summary, paste("TEST_summary_", filter.values[1], "_simulated_by_period", params, ".csv", sep=""), row.names=FALSE)
     summary
 }
-quant.list=c(0.025,0.25,0.5,0.75,0.975)
+
+
+
