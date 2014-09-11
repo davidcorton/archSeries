@@ -144,14 +144,6 @@ freq.simulate <- function(data, probs, filter.field="Species", filter.values=NUL
     data <- data[End >= start.date & Start <= end.date]  #drops records outside the date range FROM BOTH SIMULATION SETS
     bin.width <- (end.date-start.date)/nrow(probs)  #sets bin widths (and hence no. of bins) to match the calibration dataset
     
-    # simulate from real data
-    real <- date.simulate(data=data[,list(Start, End)], weight=data[,Frag], bin.width=bin.width, start.date=start.date, end.date=end.date, rep=rep)
-    setnames(real, old="V1", new="real")
-    
-    # simulate dummy set
-    dummy <- dummy.simulate(probs=probs, weight=data[,Frag], start.date=start.date, end.date=end.date, rep=rep)    
-    setnames(dummy, old="V1", new="dummy")
-    
     # set up list of all bins and rep no.s
     labels <- numeric(nrow(probs))
     for(i in 1:length(labels)) {
@@ -160,11 +152,27 @@ freq.simulate <- function(data, probs, filter.field="Species", filter.values=NUL
     frame <- data.table(rep(1:rep, each=length(labels)), rep(labels, rep))
     setnames(frame, old=c("V1", "V2"), new=c("rep.no", "bin"))
     
+    # simulate from real data
+    real <- date.simulate(data=data[,list(Start, End)], weight=data[,Frag], bin.width=bin.width, start.date=start.date, end.date=end.date, rep=rep)
+    setnames(real, old="V1", new="real")
+    
+    # simulate dummy set
+    dummy <- dummy.simulate(probs=probs, weight=data[,Frag], start.date=start.date, end.date=end.date, rep=rep)    
+    setnames(dummy, old="V1", new="dummy")
+    
     # merge the above three data.tables together
     results <- merge(frame, dummy, by=c("rep.no", "bin"), all=TRUE)
     results <- merge(results, real, by=c("rep.no", "bin"), all=TRUE)
     results[is.na(real)==TRUE, real:=0] 
     results[is.na(dummy)==TRUE, dummy:=0]
+    
+    # calculate rate of change variables
+    for(i in 1:(nrow(results)-1)) {
+        results[i,ROC.real:=(results[i+1,real]-results[i,real])/bin.width]
+        results[i,ROC.dummy:=(results[i+1,dummy]-results[i,dummy])/bin.width]
+    }
+    results[bin==labels[length(labels)], ROC.real:=NA]
+    results[bin==labels[length(labels)], ROC.dummy:=NA]
     
     # save full dataset
     write.csv(results, paste("TEST_", filter.values[1], "_simulated_by_period", params, ".csv",sep=""), row.names=FALSE)
