@@ -145,12 +145,13 @@ freq.simulate <- function(data, probs, filter.field="Species", filter.values=NUL
     bin.width <- (end.date-start.date)/nrow(probs)  #sets bin widths (and hence no. of bins) to match the calibration dataset
     
     # set up list of all bins and rep no.s
+    breaks <- seq(start.date, end.date, bin.width)
     labels <- numeric(nrow(probs))
     for(i in 1:length(labels)) {
         labels[i] <- paste(breaks[i], breaks[i+1], sep="-")
     } 
-    frame <- data.table(rep(1:rep, each=length(labels)), rep(labels, rep))
-    setnames(frame, old=c("V1", "V2"), new=c("rep.no", "bin"))
+    frame <- data.table(rep(1:rep, each=length(labels)), rep(1:length(labels), rep), rep(labels, rep))
+    setnames(frame, old=c("V1", "V2", "V3"), new=c("rep.no", "bin.no", "bin"))
     
     # simulate from real data
     real <- date.simulate(data=data[,list(Start, End)], weight=data[,Frag], bin.width=bin.width, start.date=start.date, end.date=end.date, rep=rep)
@@ -178,17 +179,29 @@ freq.simulate <- function(data, probs, filter.field="Species", filter.values=NUL
     write.csv(results, paste("TEST_", filter.values[1], "_simulated_by_period", params, ".csv",sep=""), row.names=FALSE)
 
     # create summary dataset
-    real.summary <- results[,quantile(real, probs=quant.list), by=bin]
+    real.summary <- results[,quantile(real, probs=quant.list, na.rm=TRUE), by=bin]
     real.summary[,id:=paste(rep("real", length(quant.list)), quant.list, sep="_")]
     real.summary <- dcast.data.table(real.summary, bin ~ id, value.var="V1")
-    dummy.summary <- results[,quantile(dummy, probs=quant.list), by=bin]
+   
+    dummy.summary <- results[,quantile(dummy, probs=quant.list, na.rm=TRUE), by=bin]
     dummy.summary[,id:=paste(rep("dummy", length(quant.list)), quant.list, sep="_")]
     dummy.summary <- dcast.data.table(dummy.summary, bin ~ id, value.var="V1")
-    summary <- cbind(real.summary, dummy.summary)
+    
+    ROC.real.summary <- results[, quantile(ROC.real, probs=quant.list, na.rm=TRUE), by=bin]
+    ROC.real.summary[,id:=paste(rep("ROC.real", length(quant.list)), quant.list, sep="_")]
+    ROC.real.summary <- dcast.data.table(ROC.real.summary, bin ~ id, value.var="V1")
+    
+    ROC.dummy.summary <- results[, quantile(ROC.dummy, probs=quant.list, na.rm=TRUE), by=bin]
+    ROC.dummy.summary[,id:=paste(rep("ROC.dummy", length(quant.list)), quant.list, sep="_")]
+    ROC.dummy.summary <- dcast.data.table(ROC.dummy.summary, bin ~ id, value.var="V1")
+    
+    summary <- cbind(real.summary, dummy.summary, ROC.real.summary, ROC.dummy.summary)
     
     #save summary dataset
     write.csv(summary, paste("TEST_summary_", filter.values[1], "_simulated_by_period", params, ".csv", sep=""), row.names=FALSE)
-    summary
+
+    #output list with full and summary datasets
+    list(results, summary)
 }
 
 

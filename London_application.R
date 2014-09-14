@@ -12,6 +12,7 @@ context <- data.table(read.csv("context-CLEANED.csv"))
 setkey(context, SITE_C)
 sample <- data.table(read.csv("sample-CLEANED.csv"))
 setkey(sample, SITE_S)
+fish <- data.table(read.csv("Fish/Fish.csv"))
 
 # Link tables together; drop un-needed fields
 context.period <- merge(period[,list(Site_P,Start,End,MID)], context[,list(SITE_C,Site_P)], "Site_P", all=FALSE)
@@ -53,3 +54,7 @@ write.csv(gms.dummy, paste("cod/summary_cod_dummy_by_period", params, ".csv",sep
 results <- merge(gm, gm.dummy, by=c("rep.no", "bin"), all=TRUE)
 results <- results[is.na(V1.x)==TRUE, V1.x:=0]
 
+# Simulate from fish data
+fish.period <- merge(fish, context.period, by="SITE_C", all=FALSE)
+x <- freq.simulate(fish.period, calib, filter.field="Fresh_Marine", filter.values=c("Fresh", "Fresh/Marine"), quant.list=c(0.05,0.1,0.5,0.9,0.95), rep=2000)
+y <- freq.simulate(fish.period, calib, filter.field="Fresh_Marine", filter.values="Marine", quant.list=c(0.05,0.1,0.5,0.9,0.95), rep=2000)
