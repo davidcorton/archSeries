@@ -48,7 +48,7 @@ aorist <- function(data, start.date=0, end.date=2000, bin.width=100, weight=1) {
 # 'species' is a single character value indicating which rows should be included in analysis
 # It will be ignored if no taxon column is provided in 'data', and it defaults to NULL.
 # 'start.date' is a single numeric value for the start of the time period to be analysed
-# 'end.date' is a single numric value for the end end of the time period to be analysed
+# 'end.date' is a single numeric value for the end end of the time period to be analysed
 # 'bin.width' is a single numeric value setting the resolution of the analysis, in years
 # 'rep' is the number of times the simulation will be run
 # 'weight' is a numeric vector giving a weight for each context/entity, defaulting to 1
@@ -130,10 +130,12 @@ dummy.simulate <- function(probs, weight, species=NULL, start.date=0, end.date=2
 # 'filter.values'is a character vector containing all values of the filter column that will
 #   be included in the analysis. Defaults to NULL.
 # 'quant.list' is a numeric vector of quantiles to be included in the summary output.
+# 'ROC' is a logical value indicating whether rates-of-change should be calculated and
+#   appended to the output
 # 'start.date' and 'end.date' are the chronological limits of the overall analysis.
 # 'rep' is the number of times that both 'real' and dummy simulations will be repeated.
 
-freq.simulate <- function(data, probs, filter.field="Species", filter.values=NULL, quant.list=c(0.025,0.25,0.5,0.75,0.975), start.date=0, end.date=2000, rep=1000) {
+freq.simulate <- function(data, probs, filter.field="Species", filter.values=NULL, quant.list=c(0.025,0.25,0.5,0.75,0.975), ROC=FALSE, start.date=0, end.date=2000, rep=1000) {
     require(data.table)
     require(reshape2)
     data <- data.table(data)  #just in case it isn't already in this format
@@ -168,13 +170,15 @@ freq.simulate <- function(data, probs, filter.field="Species", filter.values=NUL
     results[is.na(dummy)==TRUE, dummy:=0]
     
     # calculate rate of change variables
-    for(i in 1:(nrow(results)-1)) {
-        results[i,ROC.real:=(results[i+1,real]-results[i,real])/bin.width]
-        results[i,ROC.dummy:=(results[i+1,dummy]-results[i,dummy])/bin.width]
+    if(ROC==TRUE) {
+        for(i in 1:(nrow(results)-1)) {
+            results[i,ROC.real:=(results[i+1,real]-results[i,real])/bin.width]
+            results[i,ROC.dummy:=(results[i+1,dummy]-results[i,dummy])/bin.width]
+        }
+        results[bin==labels[length(labels)], ROC.real:=NA]
+        results[bin==labels[length(labels)], ROC.dummy:=NA]
     }
-    results[bin==labels[length(labels)], ROC.real:=NA]
-    results[bin==labels[length(labels)], ROC.dummy:=NA]
-    
+        
     # save full dataset
     write.csv(results, paste("TEST_", filter.values[1], "_simulated_by_period", params, ".csv",sep=""), row.names=FALSE)
 
@@ -187,15 +191,17 @@ freq.simulate <- function(data, probs, filter.field="Species", filter.values=NUL
     dummy.summary[,id:=paste(rep("dummy", length(quant.list)), quant.list, sep="_")]
     dummy.summary <- dcast.data.table(dummy.summary, bin ~ id, value.var="V1")
     
-    ROC.real.summary <- results[, quantile(ROC.real, probs=quant.list, na.rm=TRUE), by=bin]
-    ROC.real.summary[,id:=paste(rep("ROC.real", length(quant.list)), quant.list, sep="_")]
-    ROC.real.summary <- dcast.data.table(ROC.real.summary, bin ~ id, value.var="V1")
-    
-    ROC.dummy.summary <- results[, quantile(ROC.dummy, probs=quant.list, na.rm=TRUE), by=bin]
-    ROC.dummy.summary[,id:=paste(rep("ROC.dummy", length(quant.list)), quant.list, sep="_")]
-    ROC.dummy.summary <- dcast.data.table(ROC.dummy.summary, bin ~ id, value.var="V1")
-    
-    summary <- cbind(real.summary, dummy.summary, ROC.real.summary, ROC.dummy.summary)
+    summary <- cbind(real.summary, dummy.summary)
+   
+    if(ROC==TRUE) {
+        ROC.real.summary <- results[, quantile(ROC.real, probs=quant.list, na.rm=TRUE), by=bin]
+        ROC.real.summary[,id:=paste(rep("ROC.real", length(quant.list)), quant.list, sep="_")]
+        ROC.real.summary <- dcast.data.table(ROC.real.summary, bin ~ id, value.var="V1")
+        ROC.dummy.summary <- results[, quantile(ROC.dummy, probs=quant.list, na.rm=TRUE), by=bin]
+        ROC.dummy.summary[,id:=paste(rep("ROC.dummy", length(quant.list)), quant.list, sep="_")]
+        ROC.dummy.summary <- dcast.data.table(ROC.dummy.summary, bin ~ id, value.var="V1")
+        summary <- cbind(summary, ROC.real.summary, ROC.dummy.summary)
+    }
     
     #save summary dataset
     write.csv(summary, paste("TEST_summary_", filter.values[1], "_simulated_by_period", params, ".csv", sep=""), row.names=FALSE)
@@ -204,7 +210,7 @@ freq.simulate <- function(data, probs, filter.field="Species", filter.values=NUL
     list(results, summary)
 }
 
-anat.simulate <- function(data, probs, filter.field="group", filter.values=c("cranial", "postcranial"), quant.list=c(0.025,0.25,0.5,0.75,0.975), start.date=0, end.date=2000, rep=1000) {
+anat.simulate <- function(data, probs, filter.field="group", filter.values=c("cranial", "postcranial"), quant.list=c(0.025,0.25,0.5,0.75,0.975), ROC=FALSE, start.date=0, end.date=2000, rep=1000) {
     require(data.table)
     require(reshape2)
     data <- data.table(data) 
@@ -248,25 +254,26 @@ anat.simulate <- function(data, probs, filter.field="group", filter.values=c("cr
     
     # calculate differences
     combined[,diff:=(real.1-real.2)/(real.1+real.2)]
-    combined[,dummy.diff:=dummy.1-dummy.2]
+    combined[,dummy.diff:=(dummy.1-dummy.2)/(real.1+real.2)]
     
     # calculate rates of change
-    for(i in 1:(nrow(combined)-1)) {
-        combined[i,ROC.real.1:=(combined[i+1,real.1]-combined[i,real.1])/bin.width]
-        combined[i,ROC.dummy.1:=(combined[i+1,dummy.1]-combined[i,dummy.1])/bin.width]
-        combined[i,ROC.real.2:=(combined[i+1,real.2]-combined[i,real.2])/bin.width]
-        combined[i,ROC.dummy.2:=(combined[i+1,dummy.2]-combined[i,dummy.2])/bin.width]
-        combined[i,ROC.diff:=(combined[i+1,diff]-combined[i,diff])/bin.width]
-        combined[i,ROC.dummy.diff:=(combined[i+1,dummy.diff]-combined[i,dummy.diff])/bin.width]
-        if(i/500 == round(i/500)) {print(paste(i/nrow(combined)*100, "percent complete"))}
+    if(ROC==TRUE) {
+        for(i in 1:(nrow(combined)-1)) {
+            combined[i,ROC.real.1:=(combined[i+1,real.1]-combined[i,real.1])/bin.width]
+            combined[i,ROC.dummy.1:=(combined[i+1,dummy.1]-combined[i,dummy.1])/bin.width]
+            combined[i,ROC.real.2:=(combined[i+1,real.2]-combined[i,real.2])/bin.width]
+            combined[i,ROC.dummy.2:=(combined[i+1,dummy.2]-combined[i,dummy.2])/bin.width]
+            combined[i,ROC.diff:=(combined[i+1,diff]-combined[i,diff])/bin.width]
+            combined[i,ROC.dummy.diff:=(combined[i+1,dummy.diff]-combined[i,dummy.diff])/bin.width]
+            if(i/500 == round(i/500)) {print(paste(i/nrow(combined)*100, "percent complete"))}
+        }
+        combined[bin==labels[length(labels)], ROC.real.1:=NA]
+        combined[bin==labels[length(labels)], ROC.dummy.1:=NA]
+        combined[bin==labels[length(labels)], ROC.real.2:=NA]    
+        combined[bin==labels[length(labels)], ROC.dummy.2:=NA]
+        combined[bin==labels[length(labels)], ROC.diff:=NA]
+        combined[bin==labels[length(labels)], ROC.dummy.diff:=NA]
     }
-    combined[bin==labels[length(labels)], ROC.real.1:=NA]
-    combined[bin==labels[length(labels)], ROC.dummy.1:=NA]
-    combined[bin==labels[length(labels)], ROC.real.2:=NA]    
-    combined[bin==labels[length(labels)], ROC.dummy.2:=NA]
-    combined[bin==labels[length(labels)], ROC.diff:=NA]
-    combined[bin==labels[length(labels)], ROC.dummy.diff:=NA]
-    
     
     # create summary dataset
     real.1.summary <- combined[,quantile(real.1, probs=quant.list, na.rm=TRUE), by=bin]
@@ -285,20 +292,24 @@ anat.simulate <- function(data, probs, filter.field="group", filter.values=c("cr
     dummy.2.summary[,id:=paste(rep("dummy.2", length(quant.list)), quant.list, sep="_")]
     dummy.2.summary <- dcast.data.table(dummy.2.summary, bin ~ id, value.var="V1")
     
-    ROC.dummy.1.summary <- combined[, quantile(ROC.dummy.1, probs=quant.list, na.rm=TRUE), by=bin]
-    ROC.dummy.1.summary[,id:=paste(rep("ROC.dummy.1", length(quant.list)), quant.list, sep="_")]
-    ROC.dummy.1.summary <- dcast.data.table(ROC.dummy.1.summary, bin ~ id, value.var="V1")
+    summary <- cbind(real.1.summary, real.2.summary, dummy.1.summary, dummy.2.summary)
+    binvarcount <- 3
     
-    ROC.dummy.2.summary <- combined[, quantile(ROC.dummy.2, probs=quant.list, na.rm=TRUE), by=bin]
-    ROC.dummy.2.summary[,id:=paste(rep("ROC.dummy.2", length(quant.list)), quant.list, sep="_")]
-    ROC.dummy.2.summary <- dcast.data.table(ROC.dummy.2.summary, bin ~ id, value.var="V1")
+    if(ROC==TRUE) {
+        ROC.dummy.1.summary <- combined[, quantile(ROC.dummy.1, probs=quant.list, na.rm=TRUE), by=bin]
+        ROC.dummy.1.summary[,id:=paste(rep("ROC.dummy.1", length(quant.list)), quant.list, sep="_")]
+        ROC.dummy.1.summary <- dcast.data.table(ROC.dummy.1.summary, bin ~ id, value.var="V1")
+        ROC.dummy.2.summary <- combined[, quantile(ROC.dummy.2, probs=quant.list, na.rm=TRUE), by=bin]
+        ROC.dummy.2.summary[,id:=paste(rep("ROC.dummy.2", length(quant.list)), quant.list, sep="_")]
+        ROC.dummy.2.summary <- dcast.data.table(ROC.dummy.2.summary, bin ~ id, value.var="V1")
+        ROC.dummy.diff.summary <- combined[, quantile(ROC.dummy.diff, probs=quant.list, na.rm=TRUE), by=bin]
+        ROC.dummy.diff.summary[,id:=paste(rep("ROC.dummy.diff", length(quant.list)), quant.list, sep="_")]
+        ROC.dummy.diff.summary <- dcast.data.table(ROC.dummy.diff.summary, bin ~ id, value.var="V1")
+        summary <- cbind(summary, ROC.dummy.1.summary, ROC.dummy.2.summary, ROC.dummy.diff.summary)
+        binvarcount <- 6
+    }
     
-    ROC.dummy.diff.summary <- combined[, quantile(ROC.dummy.diff, probs=quant.list, na.rm=TRUE), by=bin]
-    ROC.dummy.diff.summary[,id:=paste(rep("ROC.dummy.diff", length(quant.list)), quant.list, sep="_")]
-    ROC.dummy.diff.summary <- dcast.data.table(ROC.dummy.diff.summary, bin ~ id, value.var="V1")
-    
-    summary <- cbind(real.1.summary, real.2.summary, dummy.1.summary, dummy.2.summary, ROC.dummy.1.summary, ROC.dummy.2.summary, ROC.dummy.diff.summary)
-    for(i in 1:6){summary[,bin:=NULL]}
+    for(i in 1:binvarcount){summary[,bin:=NULL]}
     summary <- merge(combined[rep.no==1, list(bin, bin.no)], summary, by="bin")
     
     list(combined[order(rep.no, bin.no)], summary[order(bin.no)])

@@ -16,7 +16,7 @@ fish <- data.table(read.csv("Fish/Fish.csv"))
 
 # Link tables together; drop un-needed fields
 context.period <- merge(period[,list(Site_P,Start,End,MID)], context[,list(SITE_C,Site_P)], "Site_P", all=FALSE)
-sample.period <- merge(context.period, sample[,list(SITE_S, SITE_C)], "SITE_C", all=FALSE)
+sample.period <- merge(context.period, sample[,list(SITE_S, SITE_C, PROC_VOL)], "SITE_C", all=FALSE)
 
 # Free up RAM
 rm(context, context.period, period, sample)

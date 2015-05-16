@@ -1,6 +1,5 @@
 # Load required packages
 library(data.table)
-library(reshape2)
 # Source custom functions
 source("date_functions.R")
 
@@ -17,9 +16,25 @@ context.period <- merge(period[,list(Site_P,Start,End,MID)], context[,list(SITE_
 fish.period <- merge(fish, context.period, by="SITE_C", all=FALSE)
 rm(context, period, fish, context.period)
 
+cod.list <- data.table(fish.period[Species=="COD"])
+cod.list <- cod.list[,Frag:=1]
+probs = cbind(data.table(rep(1,40)), as.character(calib$labels))
+cod <- freq.simulate(cod.list, probs)[[1]]
+cod.quant <- date.simulate(cod.list, weight=cod.list$Frag, bin.width=25)
+
+plot(cod$real[cod$rep.no==1], type="l", col=rgb(46,25,235,20, maxColorValue=255))
+for(i in 2:2000) {
+    lines(cod$real[cod$rep.no==i], type="l", col=rgb(46,25,235,20, maxColorValue=255))
+}
+plot(cod.quant$V1[cod.quant$rep.no==1], type="l", col=rgb(46,25,235,20, maxColorValue=255))
+for(i in 2:2000) {
+    lines(cod.quant$V1[cod.quant$rep.no==i], type="l", col=rgb(46,25,235,20, maxColorValue=255))
+}
+
+
 # Simulate
-fresh <- freq.simulate(fish.period, calib, filter.field="Fresh_Marine", filter.values=c("Fresh", "Fresh/Marine"), quant.list=c(0.025,0.05,0.1,0.5,0.9,0.95,0.975), rep=2000)
-marine <- freq.simulate(fish.period, calib, filter.field="Fresh_Marine", filter.values="Marine", quant.list=c(0.025,0.05,0.1,0.5,0.9,0.95,0.975), rep=2000)
+fresh <- freq.simulate(fish.period, ROC=FALSE, calib, filter.field="Fresh_Marine", filter.values=c("Fresh", "Fresh/Marine"), quant.list=c(0.025,0.05,0.1,0.5,0.9,0.95,0.975), rep=2000)
+marine <- freq.simulate(fish.period, ROC=FALSE, calib, filter.field="Fresh_Marine", filter.values="Marine", quant.list=c(0.025,0.05,0.1,0.5,0.9,0.95,0.975), rep=2000)
 
 # Plot frequencies
 names <- fresh[[2]][,bin]
@@ -66,8 +81,8 @@ y.poly <- c(fresh.upper, rev(fresh.lower))
 plot(x, fresh.upper, type="n", main="Freshwater & migratory: catch per litre", xaxt="n", ylab="Frags per litre processed", xlab="")
 ticks <- seq(1, length(names),by=2)
 axis(1, at=ticks, labels=names[ticks], las=2)
-polygon(x.poly, y.poly, col="darkolivegreen3")
-lines(x, fresh.mid, col="darkgreen")
+polygon(x.poly, y.poly, col=rgb(24,203,60,170, maxColorValue=255))
+lines(x, fresh.mid, col=rgb(46,25,235,255, maxColorValue=255))
 
 marine.upper <- marine[[2]]$real_0.9/calib$V1
 marine.mid <- marine[[2]]$real_0.5/calib$V1
@@ -77,5 +92,39 @@ y.poly <- c(marine.upper, rev(marine.lower))
 plot(x, marine.upper, type="n", main="Marine: catch per litre", xaxt="n", ylab="Frags per litre processed", xlab="")
 ticks <- seq(1, length(names),by=2)
 axis(1, at=ticks, labels=names[ticks], las=2)
-polygon(x.poly, y.poly, col="deepskyblue2")
-lines(x, marine.mid, col="dodgerblue4")
+polygon(x.poly, y.poly, col=rgb(46,25,235,170, maxColorValue=255))
+lines(x, marine.mid, col=rgb(46,25,235,255, maxColorValue=255))
+
+
+fresh[[1]][,cpl:=real/calib$V1]
+marine[[1]][,cpl:=real/calib$V1]
+z <- max(fresh[[1]]$cpl, marine[[1]]$cpl)
+
+plot(fresh[[1]]$cpl[fresh[[1]]$rep.no==1], type="n", ylim=c(0,ceiling(z)), xaxt="n", xlab="", ylab="Bones per litre sampled")
+ticks <- seq(1, length(names),by=2)
+axis(1, at=ticks, labels=names[ticks], las=2)
+for(i in 1:2000) {
+    lines(fresh[[1]]$cpl[fresh[[1]]$rep.no==i], type="l", col=rgb(24,203,60,10, maxColorValue=255))
+    lines(marine[[1]]$cpl[marine[[1]]$rep.no==i], type="l", col=rgb(46,25,235,10, maxColorValue=255))
+}
+legend("topleft", bty="n", legend=c("Freshwater/migratory", "Marine"), col=c(rgb(24,203,60,maxColorValue=255), rgb(46,25,235,maxColorValue=255)), lwd=2)
+dev.copy2pdf(file="fresh_vs_marine_quant_lines.pdf")
+
+fish.period[,Frag:=1]
+fresh_u <- freq.simulate(fish.period, ROC=FALSE, calib, filter.field="Fresh_Marine", filter.values=c("Fresh", "Fresh/Marine"), quant.list=c(0.025,0.05,0.1,0.5,0.9,0.95,0.975), rep=2000)
+marine_u <- freq.simulate(fish.period, ROC=FALSE, calib, filter.field="Fresh_Marine", filter.values="Marine", quant.list=c(0.025,0.05,0.1,0.5,0.9,0.95,0.975), rep=2000)
+
+fresh_u[[1]][,cpl:=real/calib$V1]
+marine_u[[1]][,cpl:=real/calib$V1]
+z <- max(fresh_u[[1]]$cpl, marine_u[[1]]$cpl)
+
+plot(fresh_u[[1]]$cpl[fresh_u[[1]]$rep.no==1], type="n", ylim=c(0,ceiling(z)), xaxt="n", xlab="", ylab="Species hits per sample")
+ticks <- seq(1, length(names),by=2)
+axis(1, at=ticks, labels=names[ticks], las=2)
+for(i in 1:2000) {
+    lines(fresh_u[[1]]$cpl[fresh_u[[1]]$rep.no==i], type="l", col=rgb(24,203,60,10, maxColorValue=255))
+    lines(marine_u[[1]]$cpl[marine_u[[1]]$rep.no==i], type="l", col=rgb(46,25,235,10, maxColorValue=255))
+}
+legend("topleft", bty="n", legend=c("Freshwater/migratory", "Marine"), col=c(rgb(24,203,60,maxColorValue=255), rgb(46,25,235,maxColorValue=255)), lwd=2)
+dev.copy2pdf(file="fresh_vs_marine_ubiquity_lines.pdf")
+
