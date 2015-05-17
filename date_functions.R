@@ -89,7 +89,7 @@ date.simulate <- function(data, species=NULL, start.date=0, end.date=2000, bin.w
 # 'start.date' and 'end.date' are single numeric values. Only required where a single vector
 #   is passed to 'probs' and the range under study is not 0-2000AD.
 
-dummy.simulate <- function(probs, weight, species=NULL, start.date=0, end.date=2000, rep=500) {
+dummy.simulate <- function(probs, weight, species=NULL, start.date=0, end.date=2000, rep=100) {
     require(data.table)
     probs <- data.table(probs)
     if(ncol(probs)==1) {
@@ -135,7 +135,7 @@ dummy.simulate <- function(probs, weight, species=NULL, start.date=0, end.date=2
 # 'start.date' and 'end.date' are the chronological limits of the overall analysis.
 # 'rep' is the number of times that both 'real' and dummy simulations will be repeated.
 
-freq.simulate <- function(data, probs, filter.field="Species", filter.values=NULL, quant.list=c(0.025,0.25,0.5,0.75,0.975), ROC=FALSE, start.date=0, end.date=2000, rep=1000) {
+freq.simulate <- function(data, probs, filter.field="Species", filter.values=NULL, quant.list=c(0.025,0.25,0.5,0.75,0.975), ROC=FALSE, start.date=0, end.date=2000, rep=100) {
     require(data.table)
     require(reshape2)
     data <- data.table(data)  #just in case it isn't already in this format
