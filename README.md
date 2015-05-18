@@ -108,7 +108,17 @@ A list of length two:
 .csv files for both full and summary results
 *[to be made optional]*
 
-###Current issues to work on
+##Required packages
+
+* data.table
+* reshape2
+
+##References
+
+* Barrett, J.H., A.M. Locker & C.M. Roberts (2004) The origins of intensive marine fishing in medieval Europe: the English evidence. *Proceedings of the Royal Society of London* B, **271**, 2417-2421.
+* Crema, E. (2012) Modelling temporal uncertainty in archaeological analysis. *Journal of Archaeological Method and Theory*, **19**, 440-461. 
+
+##Current issues to work on
 
 1. Make aorist progress reporter optional.
 2. Add progress reporters for other functions?
@@ -121,3 +131,4 @@ A list of length two:
 9. Fix problem with zero values in probs for dummy.simulate.
 10. Change 'Frag' to 'count' in freq.simulate.
 11. Make plotting functions.
+12. Make aorist more intelligible!
