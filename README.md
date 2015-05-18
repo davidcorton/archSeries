@@ -6,7 +6,7 @@
 * James Morris, School of Forensic and Investigative Sciences, University of Central Lancashire
 
 ###Overview
-This project aims to develop tools for constructing and comparing frequency time series from archaeological data. In particular, we're looking at ways of synthesising ecofactual data from multiple sites and contexts with varying dates and dating precision, using both aoristic and simulation-based approaches (inspired to a great extent by Crema 2011). More experimentally, we're also developing functions for calibrating ecofactual data against time series of research intensity, e.g. based on volumes of processed environmental samples or numbers of excavated contexts.
+This project aims to develop tools for constructing and comparing frequency time series from archaeological data. In particular, we're looking at ways of synthesising ecofactual data from multiple sites and contexts with varying dates and dating precision, using both aoristic and simulation-based approaches (inspired to a great extent by Crema 2012). More experimentally, we're also developing functions for calibrating ecofactual data against time series of research intensity, e.g. based on volumes of processed environmental samples or numbers of excavated contexts.
 
 The files in this repo are designed for use on a pilot dataset of contexts, environmental samples, and zooarchaeological finds supplied by MOLA, one of London's largest archaeological contractors. The data themselves are not included here for obvious reasons).
 
@@ -20,18 +20,19 @@ This is an ongoing project, so this README is intended primarily as a place to u
 5. **London_prep.R** - script for cleaning and formatting the datasets as supplied by the archaeological contractor. Obviously this is specific to our dataset and unlikely to be of general use.
 
 ###The functions
-The core functions so far are `aorist` and `date.simulate`, which each estimate a chronological distribution from a data table of entities with date ranges, but using two very different approaches.
+The core functions so far are `aorist` and `date.simulate`, which each estimate a chronological distribution from a data table of entities with date ranges, but using two very different approaches. `dummy.simulate` is used to simulate idealised chronological distributions against which empirical results can be compared.
 
 ###1. aorist
-Calculates the aoristic sum (*sensu* Crema 2011) from given date ranges for a set of entities, for example representing discrete archaeological contexts or samples. Optionally, these can be weighted, e.g. representing the number of items within a context or the volume of a soil sample. The function uses the data.table package for speed, but is nonetheless quite computationally intensive.
+Calculates the aoristic sum (*sensu* Crema 2012) from given date ranges for a set of entities, for example representing discrete archaeological contexts or samples. Optionally, these can be weighted, e.g. representing the number of items within a context or the volume of a soil sample. The function uses the data.table package for speed, but is nonetheless quite computationally intensive as we weren't able to vectorise all of the calculations.
 
 **Arguments:**
 
 * `data` is a data table with (at least) two numeric columns called Start and End.
 * `start.date` is a single numeric value for the start of the time period to be analysed (defaults to 0).
-* `end.date` is a single numric value for the end end of the time period to be analysed (defaults to 2000).
+* `end.date` is a single numeric value for the end end of the time period to be analysed (defaults to 2000).
 * `bin.width` is a single numeric value setting the resolution of the analysis, in years (defaults to 100).
 * `weight` is a numeric vector giving a weight for each context/entity (defaults to a constant of 1).
+* `progress` is a logical value specifying whether a progress report should be made (defaults to TRUE)
 
 **Returns:**
 A two-column data table with the aoristic sum itself (numeric) and bin labels (character). The number of rows in this data table will be `(end.date-start.date)/bin.width`.
@@ -50,11 +51,11 @@ In future this function may be expanded to permit distributions other than unifo
 **Arguments:**
 
 * `data` is a data table with (at least) two numeric columns called Start and End. If 'data' also has a column called taxon, this can be used with the 'species' argument to select the rows to be included in the simulation.
-* `species` is a character vector indicating which rows should be included in analysis (defaults to NULL). It will be ignored if no taxon column is provided in 'data'.
+* `filter` is a character vector indicating which rows should be included in analysis (defaults to NULL). It will be ignored if no "group" column is provided in 'data'.
 * `start.date` is a single numeric value for the start of the time period to be analysed (defaults to 0).
 * `end.date` is a single numric value for the end end of the time period to be analysed (defaults to 2000).
 * `bin.width` is a single numeric value setting the resolution of the analysis, in years (defaults to 100).
-* `rep` is the number of times the simulation will be run (defaults to 100).
+* `reps` is the number of times the simulation will be run (defaults to 100).
 * `weight` is a numeric vector giving a weight for each context/entity (defaults to a constant of 1).
 
 **Returns:**
@@ -72,11 +73,12 @@ Simulates a 'dummy' chronological distribution within specified date limits by s
 * `probs` is a vector of relative probabilities from which to sample. The length of this vector should match the desired number of bins in the output. For a uniform dummy set, pass a uniform numeric vector whose length matches the desired number of bins - e.g. `rep(1, 100)` where 100 bins are required. Alternatively, use this to specify a custom prior distribution, e.g. the output of an `aorist` call or the median values for each bin from a `date.simulate` call.
 *[currently designed for a data.table (the output of an aorist call) consisting of
 a numeric column ('aoristic.sum') to be used as relative probabilities, and a character column ('labels') containing bin labels - this needs to be worked on (see point 4 below)]*
-* `weight` is a numeric vector (or data frame/data.table) representing (weighted) instances to be simulated. If given an additional character column called taxon, this can be used to select rows for analysis using the 'species' argument.
-* `species` is a character vector indicating which rows should be included in analysis (defaults to NULL). It will be ignored if no taxon column is provided in 'data'.
-* `start.date` is a single numeric value for the start of the time period to be analysed (defaults to 0).
-* `end.date` is a single numric value for the end end of the time period to be analysed (defaults to 2000).
-* `rep` is the number of times the simulation will be run (defaults to 100).
+* `weight` is a numeric vector (or data frame/data.table) representing (weighted) instances to be simulated. If given an additional character column called "group", this can be used to select rows for analysis using the `filter` argument.
+* `filter` is a character vector indicating which rows should be included in analysis (defaults to NULL). It will be ignored if no "group" column is provided in `weight`.
+* `start.date` is a single numeric value for the start of the time period to be analysed (defaults to 0). Overruled if `breaks` set.
+* `end.date` is a single numeric value for the end end of the time period to be analysed (defaults to 2000). Overruled if `breaks` set.
+* `bin.width` is a single numeric value setting the resolution of the analysis, in years (defaults to 100). Overruled if `breaks` set.
+* `reps` is the number of times the simulation will be run (defaults to 100).
 
 **Returns:**
 A long-format data table giving the sum of weight for each bin in each repeat.
@@ -120,7 +122,6 @@ A list of length two:
 
 ##Current issues to work on
 
-1. Make aorist progress reporter optional.
 2. Add progress reporters for other functions?
 3. date.simulate: add option to simulate by item rather than by context.
 4. Revise the filtering mechanism in date.simulate and dummy.simulate to use less biology-specific terms and to allow filtering for multiple values.
@@ -131,4 +132,3 @@ A list of length two:
 9. Fix problem with zero values in probs for dummy.simulate.
 10. Change 'Frag' to 'count' in freq.simulate.
 11. Make plotting functions.
-12. Make aorist more intelligible!

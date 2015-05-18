@@ -1,117 +1,88 @@
 # Define function to calculate aoristic sum
-# Arguments: 'data' is a data table with two numeric columns called Start and End
-# 'start.date' is a single numeric value for the start of the time period to be analysed
-# 'end.date' is a single numric value for the end end of the time period to be analysed
-# 'bin.width' is a single numeric value setting the resolution of the analysis, in years
-# 'weight' is a numeric vector giving a weight for each context/entity
-# Returns: a two-column data table with the aoristic sum itself (numeric) and bin labels (character)
-# Also outputs: 'breaks', a numeric vector of breaks points,
-# 'params', a character value summarising the arguments, for use in naming output files
 
-aorist <- function(data, start.date=0, end.date=2000, bin.width=100, weight=1) { 
+aorist <- function(data, start.date=0, end.date=2000, bin.width=100, weight=1, progress=TRUE) { 
     require(data.table)
-    aoristic.sum <- numeric(((end.date-start.date)/bin.width))
-    data <- cbind(data, weight)
-    data <- data[End >= start.date & Start <= end.date]
-    data[,a:=ceiling((Start-start.date)/bin.width)+1]
-    data[,b:=floor((End-start.date)/bin.width)]
+    aoristic.sum <- numeric(((end.date-start.date)/bin.width)) #sets up empty output variable of correct length
+    data <- cbind(data, weight) #appends weights to list of date ranges, recycling if necessary (e.g. for uniform weight)
+    data <- data[End >= start.date & Start <= end.date] #excludes ranges that fall entirely outside the study period
+    data[,first.full:=ceiling((Start-start.date)/bin.width)+1] #finds number of first bin fully after Start
+    data[,last.full:=floor((End-start.date)/bin.width)] #finds the number of the last bin fully before End
     data[,lead.in:=(ceiling((Start-start.date)/bin.width)-((Start-start.date)/bin.width))*bin.width]
     data[,lead.out:=(((End-start.date)/bin.width)-floor((End-start.date)/bin.width))*bin.width]
-    data[,diff:=b-a]
-    data[,duration:={ifelse(diff==-2, lead.in+lead.out, End-Start)}]
-    data[,full.prob:=(bin.width/duration)*weight]
-    data[,in.prob:=(lead.in/duration)*weight]
-    data[,out.prob:=(lead.out/duration)*weight]
-    for(i in 1:nrow(data)) {
-        aoristic.sum[data[i,a]-1] <- aoristic.sum[data[i,a]-1] + data[i,in.prob]
-        aoristic.sum[data[i,b]+1] <- aoristic.sum[data[i,b]+1] + data[i,out.prob]
-        if(data[i,diff] >= 0) {
-            for(j in data[i,a]:data[i,b]) {
+    data[,diff:=last.full-first.full]
+    data[,duration:={ifelse(diff==-2, lead.in+lead.out, End-Start)}] #finds duration of range (special case where w/in single bin)
+    data[,full.prob:=(bin.width/duration)*weight] #sets prob. mass to be assigned to bins fully within range (then applies weight)
+    data[,in.prob:=(lead.in/duration)*weight] #sets prob. mass to be assigned to the lead-in bin (then applies weight)
+    data[,out.prob:=(lead.out/duration)*weight] #sets prob. mass to be assigned to the lead-out bin (then applies weight)
+    for(i in 1:nrow(data)) { #cycles through data, first assigning lead-in & lead-out probs to relevant bins in output variable
+        aoristic.sum[data[i,first.full]-1] <- aoristic.sum[data[i,first.full]-1] + data[i,in.prob]
+        aoristic.sum[data[i,last.full]+1] <- aoristic.sum[data[i,last.full]+1] + data[i,out.prob]
+        if(data[i,diff] >= 0) { #for ranges spanning complete bins, assigns relevant probabilities to those bins 
+            for(j in data[i,first.full]:data[i,last.full]) {
                 aoristic.sum[j] <- aoristic.sum[j] + data[i,full.prob]
             }
         }
-        if(i/1000 == round(i/1000)) {print(paste(i/nrow(data)*100, "percent complete"))}
+        if(progress==TRUE & i/1000 == round(i/1000)) {print(paste(i/nrow(data)*100, "percent complete"))} #progress monitor
     }
-    breaks <<- seq(start.date, end.date, bin.width)
+    breaks <<- seq(start.date, end.date, bin.width) #saves vector of breaks
     labels <- numeric(length(breaks)-1)
     for(i in 1:length(labels)) {
-        labels[i] <- paste(breaks[i], breaks[i+1], sep="-")
+        labels[i] <- paste(breaks[i], breaks[i+1], sep="-") #sets bin labels
     }
-    params <<- paste("_", start.date, "-", end.date, "_by_", bin.width, sep="")
-    data.table(aoristic.sum[1:length(labels)], labels)
+    params <<- paste("_", start.date, "-", end.date, "_by_", bin.width, sep="") #saves character value with key parameters 
+    data.table(aoristic.sum[1:length(labels)], labels) #returns aoristic sum with labels appended
 }
 
 # Define function to simulate distribution of dates
-# Arguments: 'data' is a data table with at least two numeric columns called Start and End.
-# If 'data' also has a column called taxon, this can be used with the 'species' argument to
-# select the rows to be included in the simulation.
-# 'species' is a single character value indicating which rows should be included in analysis
-# It will be ignored if no taxon column is provided in 'data', and it defaults to NULL.
-# 'start.date' is a single numeric value for the start of the time period to be analysed
-# 'end.date' is a single numeric value for the end end of the time period to be analysed
-# 'bin.width' is a single numeric value setting the resolution of the analysis, in years
-# 'rep' is the number of times the simulation will be run
-# 'weight' is a numeric vector giving a weight for each context/entity, defaulting to 1
-# Returns: a long-format data.table giving the sum of weight for each bin in each rep
-# Also outputs: 'breaks', a numeric vector of breaks points,
-# 'params', a character value summarising the arguments, for use in naming output files
 
-date.simulate <- function(data, species=NULL, start.date=0, end.date=2000, bin.width=100, rep=100, weight=1) {
+date.simulate <- function(data, filter=NULL, start.date=0, end.date=2000, bin.width=100, reps=100, weight=1) {
     require(data.table)
-    data <- cbind(data, weight)
-    if(length(species)>0 & "taxon" %in% colnames(data)) {data <- data[taxon==species,]}
-    data <- data[End >= start.date & Start <= end.date]
-    breaks <<- seq(start.date, end.date, bin.width)
-    params <<- paste("_", start.date, "-", end.date, "_by_", bin.width, "_x", rep, sep="")
+    data <- cbind(data, weight) #appends weights to list of date ranges, recycling if necessary (e.g. for uniform weight)
+    if(length(filter)>0 & "group" %in% colnames(data)) {data <- data[group%in%filter,]} #filters data, if appropriate
+    data <- data[End >= start.date & Start <= end.date] #excludes ranges that fall entirely outside the study period
+    breaks <<- seq(start.date, end.date, bin.width) #sets breaks and saves them externally
     labels <- numeric(length(breaks)-1)
     for(i in 1:length(labels)) {
-        labels[i] <- paste(breaks[i], breaks[i+1], sep="-")
+        labels[i] <- paste(breaks[i], breaks[i+1], sep="-") #sets bin labels
     }
-    data <- cbind(rep(1:rep, each=nrow(data)), data)
-    data[,bin:={x<-runif(nrow(data)); (x*(data[,End]-data[,Start]))+data[,Start]}]
-    data[,bin:=cut(bin,breaks,labels=labels)]
-    data <- data[is.na(bin)==FALSE, sum(weight), by=list(V1,bin)]
-    setnames(data, old=1, new="rep.no")
-    data[order(rep.no, bin)]
+    params <<- paste("_", start.date, "-", end.date, "_by_", bin.width, "_x", reps, sep="") #saves char value with key parameters 
+    rep.no <- rep(1:reps, each=nrow(data))
+    data <- cbind(rep.no, data) #recycles input data 'reps' times to provide frame for simulation
+    data[,sim:={x<-runif(nrow(data)); (x*(data[,End]-data[,Start]))+data[,Start]}] #simulates a date for each row
+    data[,bin.no:=cut(sim,breaks, labels=FALSE)] #records the relevant bin for each simulated date
+    data[,bin:=cut(sim,breaks,labels=labels)] #records the relevant bin labels
+    data <- data[is.na(bin)==FALSE, j=list(count=sum(weight)), by=list(rep.no,bin,bin.no)] #sums weights by bin and rep number
+    data[order(rep.no, bin.no)]
 }
 
-# Define function to simulate a dummy set by sampling from within an aoristic sum output
-# Arguments: 'probs' is normally a data.table (the output of an aorist call) consisting of
-#   a numeric column ('aoristic.sum') to be used as relative probabilities, and a character
-#   column ('labels') containing bin labels.
-#   Alternatively, for a uniform dummy set, pass a uniform numeric vector whose length
-#   matches the desired number of bins - e.g. rep(1, 100), where 100 bins are required.
-# 'weight' is a numeric vector (or data frame/data.table) representing (weighted) instances
-# to be simulated. If given an additional character column called taxon, this can be used
-# to select rows for analysis using the 'species' argument.
-# 'species' is a single character value indicating rows to be included in analysis. Ignored
-# unless 'weight' has a taxon colum. Defaults to NULL.
-# 'start.date' and 'end.date' are single numeric values. Only required where a single vector
-#   is passed to 'probs' and the range under study is not 0-2000AD.
+# Define function to simulate a dummy set by sampling from within a specified distribution
 
-dummy.simulate <- function(probs, weight, species=NULL, start.date=0, end.date=2000, rep=100) {
+dummy.simulate <- function(weight, probs=1, breaks=NULL, filter=NULL, start.date=0, end.date=2000, bin.width=100, reps=100) {
     require(data.table)
-    probs <- data.table(probs)
-    if(ncol(probs)==1) {
-        bin.width <- (end.date-start.date)/nrow(probs)
-        breaks <- seq(start.date, end.date, bin.width)
-        labels <- numeric(nrow(probs))
-        for(i in 1:length(labels)) {
-            labels[i] <- paste(breaks[i], breaks[i+1], sep="-")
-        } 
-        probs[,labels:=labels]
-    }
-    setnames(probs, c(1,2), c("aoristic.sum", "labels"))
-    dummy <- data.table(weight)
-    if(length(species)>0 & "taxon" %in% colnames(weight)) {weight <- weight[taxon==species,]}
-    a.sum <- sum(probs$aoristic.sum)
-    a.breaks <- c(0, cumsum(probs$aoristic.sum))
-    dummy <- cbind(rep(1:rep, each=nrow(dummy)), dummy)
-    setnames(dummy, old=1, new="rep.no")
-    dummy[,bin:=runif(nrow(dummy), 0, a.sum)]
-    dummy[,bin:=cut(bin, a.breaks, labels=probs$labels)]
-    dummy <- dummy[is.na(bin)==FALSE, sum(weight), by=list(rep.no,bin)]
-    dummy[order(rep.no, bin)]
+    
+    if(breaks==NULL) {breaks <<- seq(start.date, end.date, bin.width)} #if breaks not specified, sets them based on other arguments
+    labels <- numeric(length(breaks)-1)
+    for(i in 1:length(labels)) {
+        labels[i] <- paste(breaks[i], breaks[i+1], sep="-") #sets bin labels based on breaks
+    } 
+    probs <- cbind(probs, labels) #append labels to relative probs, recycling the latter if necessary
+    
+    dummy <- data.table(weight) #set 
+    if(nrow(dummy)==1) {dummy <- rep(1, dummy)} #if weight is a single value, use as number of entities
+
+    if(length(filter)>0 & "group"%in%colnames(dummy)) {dummy <- dummy[group==filter,]} #filter if appropriate
+    rep.no <- rep(1:reps, each=nrow(dummy))
+    dummy <- cbind(rep.no, dummy) #recycles input data 'reps' times to provide frame for simulation 
+    p.sum <- sum(probs$probs) #'stacks up' all the relative probabilities
+    p.breaks <- c(0, cumsum(probs$probs)) #uses cumulative sum of relative probabilities to set breaks
+    
+    dummy[,sim:=runif(nrow(dummy), 0, p.sum)] #samples from within p.sum
+    
+    
+    dummy[,bin.no:=cut(sim,breaks, labels=FALSE)] #records the relevant bin for each simulated date
+    dummy[,bin:=cut(sim, p.breaks, labels=probs$labels)] #finds the relevant bin labels
+    dummy <- dummy[is.na(bin)==FALSE, j=list(count=sum(weight)), by=list(rep.no,bin,bin.no)] #sums weights by bin and rep number
+    dummy[order(rep.no, bin.no)]
 }
 
 # Define function that performs both 'real' and dummy simulation on target bone data
