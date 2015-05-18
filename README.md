@@ -70,10 +70,9 @@ Simulates a 'dummy' chronological distribution within specified date limits by s
 
 **Arguments:**
 
-* `probs` is a vector of relative probabilities from which to sample. The length of this vector should match the desired number of bins in the output. For a uniform dummy set, pass a uniform numeric vector whose length matches the desired number of bins - e.g. `rep(1, 100)` where 100 bins are required. Alternatively, use this to specify a custom prior distribution, e.g. the output of an `aorist` call or the median values for each bin from a `date.simulate` call.
-*[currently designed for a data.table (the output of an aorist call) consisting of
-a numeric column ('aoristic.sum') to be used as relative probabilities, and a character column ('labels') containing bin labels - this needs to be worked on (see point 4 below)]*
-* `weight` is a numeric vector (or data frame/data.table) representing (weighted) instances to be simulated. If given an additional character column called "group", this can be used to select rows for analysis using the `filter` argument.
+* `weight` is a numeric vector (or data frame/data.table) representing (weighted) instances to be simulated. If a data frame/data table, must have a row named "weight". If given an additional character column called "group", this can be used to select rows for analysis using the `filter` argument. Alternatively, the number of (unweighted) entities to simulate can be set by passing a numeric vector of length one to `weight`.
+* `probs` is a vector of relative probabilities from which to sample, e.g. the output of an `aorist` call. These don't need to sum to one -- they will effectively be scaled. The length of this vector should match the desired number of bins in the output. Alternatively, omit this argument to use uniform probabilities (defaults to 1, which will be recycled to the correct number of bins).
+* `breaks` is a numeric vector of length one greater than the desired number of bins, indicating the break points between bins. Typically, this might be the `breaks` vector output by the `aorist` or `date_simulate` functions. If omitted, `bin.widths` will be used to set the breaks instead.
 * `filter` is a character vector indicating which rows should be included in analysis (defaults to NULL). It will be ignored if no "group" column is provided in `weight`.
 * `start.date` is a single numeric value for the start of the time period to be analysed (defaults to 0). Overruled if `breaks` set.
 * `end.date` is a single numeric value for the end end of the time period to be analysed (defaults to 2000). Overruled if `breaks` set.
@@ -121,10 +120,9 @@ A list of length two:
 * Crema, E. (2012) Modelling temporal uncertainty in archaeological analysis. *Journal of Archaeological Method and Theory*, **19**, 440-461. 
 
 ##Current issues to work on
-
-2. Add progress reporters for other functions?
+1. Move ROC code into core functions.
+2. Add progress reporters for ROC routines.
 3. date.simulate: add option to simulate by item rather than by context.
-4. Revise the filtering mechanism in date.simulate and dummy.simulate to use less biology-specific terms and to allow filtering for multiple values.
 5. Clear up bugs with passing a single vector to dummy.simulate - perhaps by separating the `probs` argument into two arguments, one for the probabilities and one for the labels. Does the vector of relative probabilities actually have to be the same length as the number of bins for the output?
 6. New function(s) to generate model distributions to feed into dummy.simulate?
 7. Set default for probs in freq.simulate, so that it's uniform unless specified otherwise.

@@ -41,8 +41,7 @@ date.simulate <- function(data, filter=NULL, start.date=0, end.date=2000, bin.wi
     if(length(filter)>0 & "group" %in% colnames(data)) {data <- data[group%in%filter,]} #filters data, if appropriate
     data <- data[End >= start.date & Start <= end.date] #excludes ranges that fall entirely outside the study period
     breaks <<- seq(start.date, end.date, bin.width) #sets breaks and saves them externally
-    labels <- numeric(length(breaks)-1)
-    for(i in 1:length(labels)) {
+    for(i in 1:(length(breaks)-1)) {
         labels[i] <- paste(breaks[i], breaks[i+1], sep="-") #sets bin labels
     }
     params <<- paste("_", start.date, "-", end.date, "_by_", bin.width, "_x", reps, sep="") #saves char value with key parameters 
@@ -59,29 +58,23 @@ date.simulate <- function(data, filter=NULL, start.date=0, end.date=2000, bin.wi
 
 dummy.simulate <- function(weight, probs=1, breaks=NULL, filter=NULL, start.date=0, end.date=2000, bin.width=100, reps=100) {
     require(data.table)
-    
-    if(breaks==NULL) {breaks <<- seq(start.date, end.date, bin.width)} #if breaks not specified, sets them based on other arguments
-    labels <- numeric(length(breaks)-1)
-    for(i in 1:length(labels)) {
-        labels[i] <- paste(breaks[i], breaks[i+1], sep="-") #sets bin labels based on breaks
-    } 
-    probs <- cbind(probs, labels) #append labels to relative probs, recycling the latter if necessary
-    
-    dummy <- data.table(weight) #set 
-    if(nrow(dummy)==1) {dummy <- rep(1, dummy)} #if weight is a single value, use as number of entities
-
+    if(is.vector(weight)==1 & length(weight)==1) {weight <- rep(1, weight)} #if weight is a single value, use as number of entities
+    dummy <- data.table(weight) #convert weights to data table format, if necessary.
     if(length(filter)>0 & "group"%in%colnames(dummy)) {dummy <- dummy[group==filter,]} #filter if appropriate
+    
+    if(is.null(breaks)==TRUE) {breaks <- seq(start.date, end.date, bin.width)} #if breaks not specified, sets them based on other arguments
+    for(i in 1:(length(breaks)-1)) {
+        labels[i] <- paste(breaks[i], breaks[i+1], sep="-") #sets bin labels based on breaks
+    }
+    probs <- data.table(cbind(probs, labels)) #append labels to relative probs, recycling the latter if necessary
     rep.no <- rep(1:reps, each=nrow(dummy))
     dummy <- cbind(rep.no, dummy) #recycles input data 'reps' times to provide frame for simulation 
-    p.sum <- sum(probs$probs) #'stacks up' all the relative probabilities
-    p.breaks <- c(0, cumsum(probs$probs)) #uses cumulative sum of relative probabilities to set breaks
-    
+    p.sum <- sum(as.numeric(probs$probs)) #'stacks up' all the relative probabilities
+    p.breaks <- c(0, cumsum(as.numeric(probs$probs))) #uses cumulative sum of relative probabilities to set breaks
     dummy[,sim:=runif(nrow(dummy), 0, p.sum)] #samples from within p.sum
-    
-    
-    dummy[,bin.no:=cut(sim,breaks, labels=FALSE)] #records the relevant bin for each simulated date
+    dummy[,bin.no:=cut(sim, p.breaks, labels=FALSE)] #records the relevant bin for each simulated date
     dummy[,bin:=cut(sim, p.breaks, labels=probs$labels)] #finds the relevant bin labels
-    dummy <- dummy[is.na(bin)==FALSE, j=list(count=sum(weight)), by=list(rep.no,bin,bin.no)] #sums weights by bin and rep number
+    dummy <- dummy[is.na(bin)==FALSE, j=list(count=sum(as.numeric(weight))), by=list(rep.no,bin,bin.no)] #sums weights by bin and rep number
     dummy[order(rep.no, bin.no)]
 }
 
