@@ -1,177 +1,214 @@
 # Define function to calculate aoristic sum
 
 aorist <- function(data, start.date=0, end.date=2000, bin.width=100, weight=1, progress=TRUE) { 
+    #Load required package
     require(data.table)
-    aoristic.sum <- numeric(((end.date-start.date)/bin.width)) #sets up empty output variable of correct length
+    
+    #Tidies up input data
     data <- cbind(data, weight) #appends weights to list of date ranges, recycling if necessary (e.g. for uniform weight)
     data <- data[End >= start.date & Start <= end.date] #excludes ranges that fall entirely outside the study period
+    
+    #Detect first full bin after start & last full bin before end (yes, this seems wrong for short ranges - bear with me.)
     data[,first.full:=ceiling((Start-start.date)/bin.width)+1] #finds number of first bin fully after Start
     data[,last.full:=floor((End-start.date)/bin.width)] #finds the number of the last bin fully before End
+    
+    #Find extent of overlap with lead-in and lead-out bins for each date range
     data[,lead.in:=(ceiling((Start-start.date)/bin.width)-((Start-start.date)/bin.width))*bin.width]
     data[,lead.out:=(((End-start.date)/bin.width)-floor((End-start.date)/bin.width))*bin.width]
+    
+    #Work out probability mass to be assigned to whole bins and to lead-in and lead-out bins
     data[,diff:=last.full-first.full]
     data[,duration:={ifelse(diff==-2, lead.in+lead.out, End-Start)}] #finds duration of range (special case where w/in single bin)
     data[,full.prob:=(bin.width/duration)*weight] #sets prob. mass to be assigned to bins fully within range (then applies weight)
     data[,in.prob:=(lead.in/duration)*weight] #sets prob. mass to be assigned to the lead-in bin (then applies weight)
     data[,out.prob:=(lead.out/duration)*weight] #sets prob. mass to be assigned to the lead-out bin (then applies weight)
-    for(i in 1:nrow(data)) { #cycles through data, first assigning lead-in & lead-out probs to relevant bins in output variable
+    
+    #Cycle through data assigning probs to bins (this is the slow bit)
+    aoristic.sum <- numeric(((end.date-start.date)/bin.width)) #sets up empty output variable of correct length
+    for(i in 1:nrow(data)) { #First assigns lead-in & lead-out probs to relevant bins
         aoristic.sum[data[i,first.full]-1] <- aoristic.sum[data[i,first.full]-1] + data[i,in.prob]
         aoristic.sum[data[i,last.full]+1] <- aoristic.sum[data[i,last.full]+1] + data[i,out.prob]
-        if(data[i,diff] >= 0) { #for ranges spanning complete bins, assigns relevant probabilities to those bins 
+        if(data[i,diff] >= 0) { #Then for ranges spanning complete bins, assigns relevant probs to those bins 
             for(j in data[i,first.full]:data[i,last.full]) {
                 aoristic.sum[j] <- aoristic.sum[j] + data[i,full.prob]
             }
         }
         if(progress==TRUE & i/1000 == round(i/1000)) {print(paste(i/nrow(data)*100, "percent complete"))} #progress monitor
     }
-    breaks <<- seq(start.date, end.date, bin.width) #saves vector of breaks
-    labels <- numeric(length(breaks)-1)
-    for(i in 1:length(labels)) {
+    
+    #Set up breaks and labels
+    breaks <<- seq(start.date, end.date, bin.width) #creates and saves vector of breaks
+    labels <- numeric(0)
+    for(i in 1:(length(breaks)-1)) {
         labels[i] <- paste(breaks[i], breaks[i+1], sep="-") #sets bin labels
     }
     params <<- paste("_", start.date, "-", end.date, "_by_", bin.width, sep="") #saves character value with key parameters 
-    data.table(aoristic.sum[1:length(labels)], labels) #returns aoristic sum with labels appended
+    
+    #Prepare and return results table
+    data.table(aorist=aoristic.sum[1:length(labels)], bin=labels, bin.no=1:length(labels)) #returns aoristic sum with labels appended
 }
 
 # Define function to simulate distribution of dates
 
-date.simulate <- function(data, filter=NULL, start.date=0, end.date=2000, bin.width=100, reps=100, weight=1) {
+date.simulate <- function(data, weight=1, filter=NULL, start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE) {
+    #Load required package
     require(data.table)
-    data <- cbind(data, weight) #appends weights to list of date ranges, recycling if necessary (e.g. for uniform weight)
+    
+    #Tidy up input data and apply filters
+    data <- data.table(cbind(data, weight)) #appends weights to list of date ranges, recycling if necessary (e.g. for uniform weight)
     if(length(filter)>0 & "group" %in% colnames(data)) {data <- data[group%in%filter,]} #filters data, if appropriate
     data <- data[End >= start.date & Start <= end.date] #excludes ranges that fall entirely outside the study period
+    
+    #Set up breaks and labels
     breaks <<- seq(start.date, end.date, bin.width) #sets breaks and saves them externally
+    labels <- numeric(0)
     for(i in 1:(length(breaks)-1)) {
         labels[i] <- paste(breaks[i], breaks[i+1], sep="-") #sets bin labels
     }
     params <<- paste("_", start.date, "-", end.date, "_by_", bin.width, "_x", reps, sep="") #saves char value with key parameters 
+       
+    #Perform simulation
     rep.no <- rep(1:reps, each=nrow(data))
-    data <- cbind(rep.no, data) #recycles input data 'reps' times to provide frame for simulation
+    data <- cbind(rep.no, data) #recycles input data 'reps' times to provide frame for simulation 
     data[,sim:={x<-runif(nrow(data)); (x*(data[,End]-data[,Start]))+data[,Start]}] #simulates a date for each row
-    data[,bin.no:=cut(sim,breaks, labels=FALSE)] #records the relevant bin for each simulated date
-    data[,bin:=cut(sim,breaks,labels=labels)] #records the relevant bin labels
-    data <- data[is.na(bin)==FALSE, j=list(count=sum(weight)), by=list(rep.no,bin,bin.no)] #sums weights by bin and rep number
-    data[order(rep.no, bin.no)]
+    data[,bin:=cut(sim,breaks,labels=labels)] #finds the relevant bin for each simulated date
+    data <- data[is.na(bin)==FALSE, j=list(count=sum(as.numeric(weight))), by=list(rep.no,bin)] #sums weights by bin and rep number
+    
+    #Prepare results table
+    frame <- data.table(rep.no=rep(1:reps, each=length(labels)), bin.no=rep(1:length(labels), reps), bin=rep(labels, reps))
+    results <- merge(frame, data, by=c("rep.no", "bin"), all=TRUE)
+    results[is.na(results)] <- 0
+    
+    #Calculate rates of change, if necessary (this is the slow bit, so default is to skip)
+    if(RoC==TRUE) {
+        for(i in 1:(nrow(results)-1)) {
+            results[i,RoC:=(results[i+1,count]-results[i,count])/bin.width]
+        }
+        results[bin==labels[length(labels)], RoC:=NA]
+    }
+    
+    #Return results
+    results
 }
 
 # Define function to simulate a dummy set by sampling from within a specified distribution
 
-dummy.simulate <- function(weight, probs=1, breaks=NULL, filter=NULL, start.date=0, end.date=2000, bin.width=100, reps=100) {
+dummy.simulate <- function(weight, probs=1, breaks=NULL, filter=NULL, start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE) {
+    #Load required package
     require(data.table)
+    
+    #Tidy up input data and apply filters
     if(is.vector(weight)==1 & length(weight)==1) {weight <- rep(1, weight)} #if weight is a single value, use as number of entities
     dummy <- data.table(weight) #convert weights to data table format, if necessary.
     if(length(filter)>0 & "group"%in%colnames(dummy)) {dummy <- dummy[group==filter,]} #filter if appropriate
     
+    #Set up breaks and labels
     if(is.null(breaks)==TRUE) {breaks <- seq(start.date, end.date, bin.width)} #if breaks not specified, sets them based on other arguments
+    labels <- numeric(0)
     for(i in 1:(length(breaks)-1)) {
         labels[i] <- paste(breaks[i], breaks[i+1], sep="-") #sets bin labels based on breaks
     }
     probs <- data.table(cbind(probs, labels)) #append labels to relative probs, recycling the latter if necessary
+    
+    #Perform simulation
     rep.no <- rep(1:reps, each=nrow(dummy))
     dummy <- cbind(rep.no, dummy) #recycles input data 'reps' times to provide frame for simulation 
     p.sum <- sum(as.numeric(probs$probs)) #'stacks up' all the relative probabilities
     p.breaks <- c(0, cumsum(as.numeric(probs$probs))) #uses cumulative sum of relative probabilities to set breaks
     dummy[,sim:=runif(nrow(dummy), 0, p.sum)] #samples from within p.sum
-    dummy[,bin.no:=cut(sim, p.breaks, labels=FALSE)] #records the relevant bin for each simulated date
-    dummy[,bin:=cut(sim, p.breaks, labels=probs$labels)] #finds the relevant bin labels
-    dummy <- dummy[is.na(bin)==FALSE, j=list(count=sum(as.numeric(weight))), by=list(rep.no,bin,bin.no)] #sums weights by bin and rep number
-    dummy[order(rep.no, bin.no)]
+    dummy[,bin:=cut(sim, p.breaks, labels=probs$labels)] #finds the relevant bin for each simulated date
+    dummy <- dummy[is.na(bin)==FALSE, j=list(dummy=sum(as.numeric(weight))), by=list(rep.no,bin)] #sums weights by bin and rep number
+    
+    #Prepares and returns results table
+    frame <- data.table("rep.no"=rep(1:reps, each=length(labels)), "bin.no"=rep(1:length(labels), reps), "bin"=rep(labels, reps))
+    results <- merge(frame, dummy, by=c("rep.no", "bin"), all=TRUE)
+    results[is.na(results)] <- 0
+    
+    #Calculate rates of change, if necessary (this is the slow bit, so default is to skip)
+    if(RoC==TRUE) {
+        for(i in 1:(nrow(results)-1)) {
+            results[i,RoC:=(results[i+1,dummy]-results[i,dummy])/bin.width]
+        }
+        results[bin==labels[length(labels)], RoC:=NA]
+    }
+    
+    #Return results
+    results
 }
 
 # Define function that performs both 'real' and dummy simulation on target bone data
-# Arguments: 'data' is a data.frame or data.table with columns including Start, End, and
-# Frag. If additional factor columns are provided, these can be used to filter the data
-# using the 'filter.field' and 'filter.values' arguments, below. The function saves both
-# full and summary simulation results to .csv files, and also returns the latter.
-# 'probs' is normally a data.table (the output of an aorist call) consisting of
-#   a numeric column ('aoristic.sum') to be used as relative probabilities, and a character
-#   column ('labels') containing bin labels.
-#   Alternatively, for a uniform dummy set, pass a uniform numeric vector whose length
-#   matches the desired number of bins - e.g. rep(1, 100), where 100 bins are required.
-# 'filter.field' is a single character value denoting the name of a column that will be
-#   used to filter the data. This defaults to "Species" but will be ignored unless 
-#   'filter.values' is set.
-# 'filter.values'is a character vector containing all values of the filter column that will
-#   be included in the analysis. Defaults to NULL.
-# 'quant.list' is a numeric vector of quantiles to be included in the summary output.
-# 'ROC' is a logical value indicating whether rates-of-change should be calculated and
-#   appended to the output
-# 'start.date' and 'end.date' are the chronological limits of the overall analysis.
-# 'rep' is the number of times that both 'real' and dummy simulations will be repeated.
 
-freq.simulate <- function(data, probs, filter.field="Species", filter.values=NULL, quant.list=c(0.025,0.25,0.5,0.75,0.975), ROC=FALSE, start.date=0, end.date=2000, rep=100) {
+freq.simulate <- function(data, probs=1, weight=1, filter.field="group", filter.values=NULL, quant.list=c(0.025,0.25,0.5,0.75,0.975), start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, save.full=FALSE, save.summ=FALSE) {
+    #Load required packages
     require(data.table)
     require(reshape2)
+    
+    #Tidy up input data; apply filters
     data <- data.table(data)  #just in case it isn't already in this format
     if(is.null(filter.values)==FALSE) {  #if criteria have been provided...
         setnames(data, old=filter.field, new="FILTER")   #...sets the filter column...
         data <- data[FILTER %in% filter.values,]  #...and applies the criteria
     } else {filter.values <- "ALL"}
     data <- data[End >= start.date & Start <= end.date]  #drops records outside the date range FROM BOTH SIMULATION SETS
-    bin.width <- (end.date-start.date)/nrow(probs)  #sets bin widths (and hence no. of bins) to match the calibration dataset
+    if(length(weight)==1) {weight=rep(weight, nrow(data))} #if weight set as constant, repeats to length of data
     
-    # set up list of all bins and rep no.s
-    breaks <- seq(start.date, end.date, bin.width)
-    labels <- numeric(nrow(probs))
-    for(i in 1:length(labels)) {
-        labels[i] <- paste(breaks[i], breaks[i+1], sep="-")
-    } 
-    frame <- data.table(rep(1:rep, each=length(labels)), rep(1:length(labels), rep), rep(labels, rep))
-    setnames(frame, old=c("V1", "V2", "V3"), new=c("rep.no", "bin.no", "bin"))
+    #Reset bin.width based on probs, if necessary
+    if(is.vector(probs)==TRUE & length(probs)>1) {bin.width <- (end.date-start.date)/length(probs)}  #if probs supplied, use to set bin.widths
+    if(sum(class(probs)=="data.frame")==1) {bin.width <- (end.date-start.date)/nrow(probs)}  #likewise if supplied as data.frame/data.table
+   
+    #Simulate from real data, then generate dummy set. Merge the two together.
+    real <- date.simulate(data=data[,list(Start, End)], weight=weight, bin.width=bin.width, start.date=start.date, end.date=end.date, reps=reps)
+    dummy <- dummy.simulate(weight=weight, probs=probs, breaks=breaks, start.date=start.date, end.date=end.date, bin.width=bin.width, reps=reps)    
+    results <- merge(real, dummy, by=c("rep.no", "bin", "bin.no"), all=TRUE)
     
-    # simulate from real data
-    real <- date.simulate(data=data[,list(Start, End)], weight=data[,Frag], bin.width=bin.width, start.date=start.date, end.date=end.date, rep=rep)
-    setnames(real, old="V1", new="real")
-    
-    # simulate dummy set
-    dummy <- dummy.simulate(probs=probs, weight=data[,Frag], start.date=start.date, end.date=end.date, rep=rep)    
-    setnames(dummy, old="V1", new="dummy")
-    
-    # merge the above three data.tables together
-    results <- merge(frame, dummy, by=c("rep.no", "bin"), all=TRUE)
-    results <- merge(results, real, by=c("rep.no", "bin"), all=TRUE)
-    results[is.na(real)==TRUE, real:=0] 
-    results[is.na(dummy)==TRUE, dummy:=0]
-    
-    # calculate rate of change variables
-    if(ROC==TRUE) {
+    #Calculate rate of change variables (could be done within core functions, but faster to loop through together here)
+    if(RoC==TRUE) {
         for(i in 1:(nrow(results)-1)) {
-            results[i,ROC.real:=(results[i+1,real]-results[i,real])/bin.width]
-            results[i,ROC.dummy:=(results[i+1,dummy]-results[i,dummy])/bin.width]
+            results[i,RoC.count:=(results[i+1,count]-results[i,count])/bin.width]
+            results[i,RoC.dummy:=(results[i+1,dummy]-results[i,dummy])/bin.width]
         }
-        results[bin==labels[length(labels)], ROC.real:=NA]
-        results[bin==labels[length(labels)], ROC.dummy:=NA]
+        results[bin==unique(bin)[length(unique(bin))], RoC.count:=NA]
+        results[bin==unique(bin)[length(unique(bin))], RoC.dummy:=NA]
     }
         
-    # save full dataset
-    write.csv(results, paste("TEST_", filter.values[1], "_simulated_by_period", params, ".csv",sep=""), row.names=FALSE)
+    #Save full dataset, if requested
+    if(save.full==TRUE) {write.csv(results, paste("FULL_", filter.values[1], "_simulated_by_period", params, ".csv",sep=""), row.names=FALSE)}
 
-    # create summary dataset
-    real.summary <- results[,quantile(real, probs=quant.list, na.rm=TRUE), by=bin]
-    real.summary[,id:=paste(rep("real", length(quant.list)), quant.list, sep="_")]
-    real.summary <- dcast.data.table(real.summary, bin ~ id, value.var="V1")
+    #Create summary dataset
+    real.summary <- sim.summ(results[,list(rep.no, bin, bin.no, count)], quant.list)
+    dummy.summary <- sim.summ(results[,list(rep.no, bin, bin.no, dummy)], quant.list)  
+    summary <- merge(real.summary, dummy.summary, by="bin")
    
-    dummy.summary <- results[,quantile(dummy, probs=quant.list, na.rm=TRUE), by=bin]
-    dummy.summary[,id:=paste(rep("dummy", length(quant.list)), quant.list, sep="_")]
-    dummy.summary <- dcast.data.table(dummy.summary, bin ~ id, value.var="V1")
-    
-    summary <- cbind(real.summary, dummy.summary)
-   
-    if(ROC==TRUE) {
-        ROC.real.summary <- results[, quantile(ROC.real, probs=quant.list, na.rm=TRUE), by=bin]
-        ROC.real.summary[,id:=paste(rep("ROC.real", length(quant.list)), quant.list, sep="_")]
-        ROC.real.summary <- dcast.data.table(ROC.real.summary, bin ~ id, value.var="V1")
-        ROC.dummy.summary <- results[, quantile(ROC.dummy, probs=quant.list, na.rm=TRUE), by=bin]
-        ROC.dummy.summary[,id:=paste(rep("ROC.dummy", length(quant.list)), quant.list, sep="_")]
-        ROC.dummy.summary <- dcast.data.table(ROC.dummy.summary, bin ~ id, value.var="V1")
-        summary <- cbind(summary, ROC.real.summary, ROC.dummy.summary)
+    #Summarise and append RoC results, if requested
+    if(RoC==TRUE) {
+        RoC.count.summary <- sim.summ(results[,list(rep.no, bin, bin.no, RoC.count)], quant.list)
+        RoC.dummy.summary <- sim.summ(results[,list(rep.no, bin, bin.no, RoC.dummy)], quant.list)
+        RoC.summary <- merge(RoC.count.summary, RoC.dummy.summary, by="bin")
+        summary <- merge(summary, RoC.summary, by="bin")
     }
     
-    #save summary dataset
-    write.csv(summary, paste("TEST_summary_", filter.values[1], "_simulated_by_period", params, ".csv", sep=""), row.names=FALSE)
+    #Save summary dataset, if requested
+    if(save.summ==TRUE) {write.csv(summary, paste("SUMMARY_", filter.values[1], "_simulated_by_period", params, ".csv", sep=""), row.names=FALSE)}
 
-    #output list with full and summary datasets
+    #Return list with full and summary datasets
     list(results, summary)
+}
+
+#Define function to create summary table from results of data.simulate or dummy.simulate
+
+sim.summ <- function(results, quant.list=c(0.025,0.25,0.5,0.75,0.975)) {
+    #Load required packages
+    require(data.table)
+    require(reshape2)
+    
+    #Save name of data field then replace with "data" (easier than trying to refer to it by number below)
+    data.field <- colnames(results)[4]
+    setnames(results, 4, "count")    
+
+    #Create and return summary table
+    summary <- results[,quantile(count, probs=quant.list, na.rm=TRUE), by=bin]
+    summary[,id:=paste(rep(data.field, length(quant.list)), quant.list, sep="_")]
+    dcast.data.table(summary, bin ~ id, value.var="V1") 
 }
 
 anat.simulate <- function(data, probs, filter.field="group", filter.values=c("cranial", "postcranial"), quant.list=c(0.025,0.25,0.5,0.75,0.975), ROC=FALSE, start.date=0, end.date=2000, rep=1000) {

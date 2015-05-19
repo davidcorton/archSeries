@@ -53,10 +53,11 @@ In future this function may be expanded to permit distributions other than unifo
 * `data` is a data table with (at least) two numeric columns called Start and End. If 'data' also has a column called taxon, this can be used with the 'species' argument to select the rows to be included in the simulation.
 * `filter` is a character vector indicating which rows should be included in analysis (defaults to NULL). It will be ignored if no "group" column is provided in 'data'.
 * `start.date` is a single numeric value for the start of the time period to be analysed (defaults to 0).
-* `end.date` is a single numric value for the end end of the time period to be analysed (defaults to 2000).
+* `end.date` is a single numeric value for the end end of the time period to be analysed (defaults to 2000).
 * `bin.width` is a single numeric value setting the resolution of the analysis, in years (defaults to 100).
 * `reps` is the number of times the simulation will be run (defaults to 100).
 * `weight` is a numeric vector giving a weight for each context/entity (defaults to a constant of 1).
+* `RoC` is a logical value indicating whether rates-of-change should be calculated and appended to the output (defaults to FALSE). Nb. setting to TRUE will make the function much slower.
 
 **Returns:**
 A long-format data table giving the sum of weight for each bin in each repeat.
@@ -78,11 +79,23 @@ Simulates a 'dummy' chronological distribution within specified date limits by s
 * `end.date` is a single numeric value for the end end of the time period to be analysed (defaults to 2000). Overruled if `breaks` set.
 * `bin.width` is a single numeric value setting the resolution of the analysis, in years (defaults to 100). Overruled if `breaks` set.
 * `reps` is the number of times the simulation will be run (defaults to 100).
+* `RoC` is a logical value indicating whether rates-of-change should be calculated and appended to the output (defaults to FALSE). Nb. setting to TRUE will make the function much slower.
 
-**Returns:**
+**Returns**
 A long-format data table giving the sum of weight for each bin in each repeat.
 
-##4. freq.simulate
+##4. sim.summ
+This is a utility function that takes the lone-format output from `date.simulate` or `dummy.simulate` and creates a wide-format summary dataset based on specified quantiles.
+
+**Arguments**
+
+* `results` is a data table with four columns, three of which are called "rep.no", "bin", and "bin.no", while the fourth can take any name. Typically this is the output from `date.simulate` or `dummy.simulate`.
+* `quant.list` is a numeric vector of quantiles to be included in the summary output (defaults to `c(0.025, 0.25, 0.5, 0.75, 0.975)`, i.e. the median, quartiles, 2.5th and 97.5th percentiles).
+
+**Returns**
+A wide-format data table with a factor column for bin names and a numeric column for each specified quantile.
+
+##5. freq.simulate
 Performs both 'real' and dummy simulation (using `date.simulate` and `dummy simulate` respectively) on a set of entities with date ranges and optionally weights so that the two can be compared to detect deviation from a null hypothesis. The dummy set is generated using the same number of entities and the same weights as for the 'real' set. Both the full simulation results and a summary dataset are returned, and optionally also saved as .csv files.
 
 Optionally, the function can also calculate the rate of change (ROC) between each bin and the next in each simulation (for both real and dummy sets). This allows one to test hypotheses concerning increases or decreases at certain points in the time series.
@@ -91,23 +104,25 @@ Optionally, the function can also calculate the rate of change (ROC) between eac
 
 * `data` is a data.frame or data.table with columns including Start, End, and Frag. If additional factor columns are provided, these can be used to filter the data using the `filter.field` and `filter.values` arguments, below.
 * `probs` is an optional vector of relative probabilities to be passed to dummy.simulate. Defaults to 1, resulting in a uniform dummy set. 
-* `filter.field` is a character vector of length one, denoting the name of a column that will be used to filter the data. Defaults to 'Species' but ignored unless 'filter.values' is set.
+* `filter.field` is a character vector of length one, denoting the name of a column that will be used to filter the data. Defaults to "group"" but ignored unless 'filter.values' is set.
 * `filter.values` is a character vector indicating which rows should be included in analysis (defaults to NULL, in which case all values are included).
-* `quant.list` is a numeric vector of quantiles to be included in the summary output.
-* `ROC` is a logical value indicating whether rates-of-change should be calculated and appended to the output (defaults to FALSE). Nb. setting to TRUE will make the function much slower.
+* `quant.list` is a numeric vector of quantiles to be included in the summary output (defaults to median, quartiles, 2.5th and 97.5th percentiles).
 * `start.date` is a single numeric value for the start of the time period to be analysed (defaults to 0).
 * `end.date` is a single numeric value for the end end of the time period to be analysed (defaults to 2000).
-* `rep` is the number of times the simulation will be run (defaults to 100).
+* `bin.width` is a single numeric value setting the resolution of the analysis, in years (defaults to 100). Overruled if `probs` has length>1.
+* `reps` is the number of times the simulation will be run (defaults to 100).
+* `RoC` is a logical value indicating whether rates-of-change should be calculated and appended to the output (defaults to FALSE). Nb. setting to TRUE will make the function much slower.
+*`save.full` is a logical value indicating whether the full results table should be saved as a csv file (defauls to FALSE).
+*`save.summ` is a logical value indicating whether the summary results table should be saved as a csv file (defauls to FALSE).
 
 **Returns:**
 A list of length two:
 
-1. A long-format data table giving the sum of weight for each bin in each repeat, for both the 'real' and 'dummy' simulations.
-2. A data table giving the specified quantiles of the full simulation results for each bin, again for both the 'real' and 'dummy' simulations.
+1. A long-format data table giving the sum of weight for each bin in each repeat, for both the 'real' and 'dummy' simulations (plus columns for rates of change, if RoC==TRUE).
+2. A data table giving the specified quantiles of the full simulation results for each bin, again for both the 'real' and 'dummy' simulations (and for rates of change, if RoC=TRUE).
 
 **Also outputs:**
-.csv files for both full and summary results
-*[to be made optional]*
+Depending on arguments, .csv files for full and/or summary results
 
 ##Required packages
 
@@ -120,13 +135,8 @@ A list of length two:
 * Crema, E. (2012) Modelling temporal uncertainty in archaeological analysis. *Journal of Archaeological Method and Theory*, **19**, 440-461. 
 
 ##Current issues to work on
-1. Move ROC code into core functions.
 2. Add progress reporters for ROC routines.
 3. date.simulate: add option to simulate by item rather than by context.
-5. Clear up bugs with passing a single vector to dummy.simulate - perhaps by separating the `probs` argument into two arguments, one for the probabilities and one for the labels. Does the vector of relative probabilities actually have to be the same length as the number of bins for the output?
 6. New function(s) to generate model distributions to feed into dummy.simulate?
-7. Set default for probs in freq.simulate, so that it's uniform unless specified otherwise.
-8. Output files/variables from freq.simulate - set arguments to specify.
 9. Fix problem with zero values in probs for dummy.simulate.
-10. Change 'Frag' to 'count' in freq.simulate.
 11. Make plotting functions.
