@@ -19,6 +19,11 @@ This is an ongoing project, so this README is intended primarily as a place to u
 4. **CPUE_code.R** - code for a forthcoming paper exploring the FEH in London **WORK IN PROGRESS**.
 5. **London_prep.R** - script for cleaning and formatting the datasets as supplied by the archaeological contractor. Obviously this is specific to our dataset and unlikely to be of general use.
 
+##Required packages
+
+* data.table
+* reshape2
+
 ###The functions
 The core functions so far are `aorist` and `date.simulate`, which each estimate a chronological distribution from a data table of entities with date ranges, but using two very different approaches. `dummy.simulate` is used to simulate idealised chronological distributions against which empirical results can be compared.
 
@@ -41,7 +46,33 @@ A two-column data table with the aoristic sum itself (numeric) and bin labels (c
 `breaks`: a numeric vector of breaks points.
 `params`: a character value summarising the arguments, for use in naming output files.
 
-##2. date.simulate
+##2. comp.simulate
+Applies `date.simulate`, `dummy.simulate`, or `freq.simulate` to multiple subsets of a data table, combining the results into a single results table (and, optionally, a single summary results table).
+
+**Arguments**
+Nb. most of these are simply passed to the specified simulation function, so may or may not be relevant depending on which function that is.
+
+* `data` is a data table with (at least) two numeric columns called Start and End. If additional factor columns are provided, these can be used to filter the data using the `filter.field` and `filter.values` arguments, below.
+* `probs` is a vector of relative probabilities from which to sample, e.g. the output of an `aorist` call. These don't need to sum to one -- they will effectively be scaled. The length of this vector should match the desired number of bins in the output. Alternatively, omit this argument to use uniform probabilities (defaults to 1, which will be recycled to the correct number of bins).
+* `weight` is a numeric vector giving a weight for each context/entity (defaults to a constant of 1).
+* `comp.values` is a vector of values of `comp.field` to be compared. If not provided, all unique values will be compared.
+* `comp.field` is a character vector of length one, denoting the name of the coumn by which the data will be subsetted.
+* `comp.fun` is the simulation function to be used (defaults to `date.simulate`).
+* `filter.field` is a character vector of length one, denoting the name of a column that will be used to filter the data. Defaults to "group"" but ignored unless 'filter.values' is set.
+* `filter.values` is a character vector indicating which rows should be included in analysis (defaults to NULL, in which case all values are included).
+* `quant.list` is a numeric vector of quantiles to be included in the summary output (defaults to median, quartiles, 2.5th and 97.5th percentiles).
+* `start.date` is a single numeric value for the start of the time period to be analysed (defaults to 0).
+* `end.date` is a single numeric value for the end end of the time period to be analysed (defaults to 2000).
+* `bin.width` is a single numeric value setting the resolution of the analysis, in years (defaults to 100).
+* `reps` is the number of times the simulation will be run (defaults to 100).
+* `RoC` is a logical value indicating whether rates-of-change should be calculated and appended to the output (defaults to FALSE). Nb. setting to TRUE will make the function *much* slower.
+* `summ` is a logical value indicating whether a summary results table should be returned along with the full results (defaults to FALSE).
+
+**Returns:**
+A data table giving the sum of weight for each group, for each bin in each repeat, for both the 'real' and 'dummy' simulations (plus columns for rates of change, if RoC==TRUE).
+If `summ`=TRUE, a list containing the above and a second data table giving the specified quantiles of the full simulation results for each bin, again for both the 'real' and 'dummy' simulations (and for rates of change, if RoC=TRUE).
+
+##3. date.simulate
 Applies a simulation approach to estimate chronological distribution from given date ranges for a set of entities, for example representing discrete archaeological contexts or samples (this is again based on the procedure described by Crema (2011) and has advantages over `aorist` as set out in that paper). Optionally, the entities can be weighted, e.g. representing the number of items within a context or the volume of a soil sample.
 
 The function simulates a date (year) for each entity, assuming a uniform distribution within the limits of its date range, and places the results into chronological bins of a specified resultion. This process is repeated a specified number of times, allowing the number of points falling into each chronological bin to be estimated, with confidence intervals. Weights are applied **after** sampling, such that heavily weighted entities will tend to increase confidence intervals within their date ranges (this will typically be an appropriately conservative approach in an archaeological scenario).
@@ -50,13 +81,15 @@ In future this function may be expanded to permit distributions other than unifo
 
 **Arguments:**
 
-* `data` is a data table with (at least) two numeric columns called Start and End. If 'data' also has a column called taxon, this can be used with the 'species' argument to select the rows to be included in the simulation.
+
+* `data` is a data table with (at least) two numeric columns called Start and End. If additional factor columns are provided, these can be used to filter the data using the `filter.field` and `filter.values` arguments, below.
+* `weight` is a numeric vector giving a weight for each context/entity (defaults to a constant of 1).
 * `filter` is a character vector indicating which rows should be included in analysis (defaults to NULL). It will be ignored if no "group" column is provided in 'data'.
 * `start.date` is a single numeric value for the start of the time period to be analysed (defaults to 0).
 * `end.date` is a single numeric value for the end end of the time period to be analysed (defaults to 2000).
 * `bin.width` is a single numeric value setting the resolution of the analysis, in years (defaults to 100).
 * `reps` is the number of times the simulation will be run (defaults to 100).
-* `weight` is a numeric vector giving a weight for each context/entity (defaults to a constant of 1).
+
 * `RoC` is a logical value indicating whether rates-of-change should be calculated and appended to the output (defaults to FALSE). Nb. setting to TRUE will make the function much slower.
 
 **Returns:**
@@ -66,7 +99,7 @@ A long-format data table giving the sum of weight for each bin in each repeat.
 `breaks`: a numeric vector of breaks points.
 `params`: a character value summarising the arguments, for use in naming output files.
 
-##3. dummy.simulate
+##4. dummy.simulate
 Simulates a 'dummy' chronological distribution within specified date limits by sampling from within a distribution defined by an input vector. Designed for use with date.simulate, particularly within wrapper functions like freq.simulate. The idea here is to simulate chronological distributions based on the same number of entities (with the same weights) as a date.simulate call, but unconstrained by the known date ranges.
 
 **Arguments:**
@@ -83,17 +116,6 @@ Simulates a 'dummy' chronological distribution within specified date limits by s
 
 **Returns**
 A long-format data table giving the sum of weight for each bin in each repeat.
-
-##4. sim.summ
-This is a utility function that takes the lone-format output from `date.simulate` or `dummy.simulate` and creates a wide-format summary dataset based on specified quantiles.
-
-**Arguments**
-
-* `results` is a data table with four columns, three of which are called "rep.no", "bin", and "bin.no", while the fourth can take any name. Typically this is the output from `date.simulate` or `dummy.simulate`.
-* `quant.list` is a numeric vector of quantiles to be included in the summary output (defaults to `c(0.025, 0.25, 0.5, 0.75, 0.975)`, i.e. the median, quartiles, 2.5th and 97.5th percentiles).
-
-**Returns**
-A wide-format data table with a factor column for bin names and a numeric column for each specified quantile.
 
 ##5. freq.simulate
 Performs both 'real' and dummy simulation (using `date.simulate` and `dummy simulate` respectively) on a set of entities with date ranges and optionally weights so that the two can be compared to detect deviation from a null hypothesis. The dummy set is generated using the same number of entities and the same weights as for the 'real' set. Both the full simulation results and a summary dataset are returned, and optionally also saved as .csv files.
@@ -124,10 +146,17 @@ A list of length two:
 **Also outputs:**
 Depending on arguments, .csv files for full and/or summary results
 
-##Required packages
+##6. sim.summ
+This is a utility function that takes the long-format output from `date.simulate` or `dummy.simulate` and creates a wide-format summary dataset based on specified quantiles.
 
-* data.table
-* reshape2
+**Arguments**
+
+* `results` is a data table with at least four columns, the first three of which must be called "rep.no", "bin", and "bin.no", while the rest can take any name. Typically this is the output from `date.simulate` or `dummy.simulate`.
+* `summ.col` is a numeric vector indicating the columns to be summarised. By default, all columns apart from the first three are summarised.
+* `quant.list` is a numeric vector of quantiles to be included in the summary output (defaults to `c(0.025, 0.25, 0.5, 0.75, 0.975)`, i.e. the median, quartiles, 2.5th and 97.5th percentiles).
+
+**Returns**
+A wide-format data table with a factor column for bin names and a numeric column for each specified quantile.
 
 ##References
 
@@ -135,8 +164,10 @@ Depending on arguments, .csv files for full and/or summary results
 * Crema, E. (2012) Modelling temporal uncertainty in archaeological analysis. *Journal of Archaeological Method and Theory*, **19**, 440-461. 
 
 ##Current issues to work on
-2. Add progress reporters for ROC routines.
-3. date.simulate: add option to simulate by item rather than by context.
+1. tidy up use of filter arguments
+2. tidy up use of summary options
+3. Add progress reporters for ROC routines.
+4. date.simulate: add option to simulate by item rather than by context.
 6. New function(s) to generate model distributions to feed into dummy.simulate?
 9. Fix problem with zero values in probs for dummy.simulate.
 11. Make plotting functions.
