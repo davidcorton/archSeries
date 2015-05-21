@@ -168,6 +168,7 @@ A wide-format data table with a factor column for bin names and a numeric column
 2. tidy up use of summary options
 3. Add progress reporters for ROC routines.
 4. date.simulate: add option to simulate by item rather than by context.
+5. re-write filter/comparison sections to use get() rather than reassigning names
 6. New function(s) to generate model distributions to feed into dummy.simulate?
 9. Fix problem with zero values in probs for dummy.simulate.
 11. Make plotting functions.

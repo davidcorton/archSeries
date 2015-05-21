@@ -138,7 +138,7 @@ dummy.simulate <- function(weight, probs=1, breaks=NULL, filter.values=NULL, sta
 
 # Define function that performs both 'real' and dummy simulation on target bone data
 
-freq.simulate <- function(data, probs=1, weight=1, filter.field="group", filter.values=NULL, quant.list=c(0.025,0.25,0.5,0.75,0.975), start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, save.full=FALSE, save.summ=FALSE, ...) {
+freq.simulate <- function(data, probs=1, weight=1, filter.field="group", filter.values=NULL, quant.list=c(0.025,0.25,0.5,0.75,0.975), start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=FALSE, save.full=FALSE, save.summ=FALSE, ...) {
     #Load required packages
     require(data.table)
     require(reshape2)
@@ -178,8 +178,9 @@ freq.simulate <- function(data, probs=1, weight=1, filter.field="group", filter.
     summary <- sim.summ(results)
     if(save.summ==TRUE) {write.csv(summary, paste("SUMMARY_", filter.values[1], "_simulated_by_period", params, ".csv", sep=""), row.names=FALSE)}
 
-    #Return list with full and summary datasets
-    list(results, summary)
+    #Return results
+    if(summ==TRUE) {results <- list(results, summary)}
+    results
 }
 
 #Define function to create summary table from results of data.simulate or dummy.simulate
@@ -237,3 +238,5 @@ comp.simulate <- function(data, probs=1, weight=1, comp.values=NULL, comp.field=
     if(summ==TRUE) {results <- list(results, summary)}
     results
 }
+
+
