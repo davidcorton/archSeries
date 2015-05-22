@@ -138,7 +138,7 @@ dummy.simulate <- function(weight, probs=1, breaks=NULL, filter.values=NULL, sta
 
 # Define function that performs both 'real' and dummy simulation on target bone data
 
-freq.simulate <- function(data, probs=1, weight=1, filter.field="group", filter.values=NULL, quant.list=c(0.025,0.25,0.5,0.75,0.975), start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=FALSE, save.full=FALSE, save.summ=FALSE, ...) {
+freq.simulate <- function(data, probs=1, weight=1, filter.field="group", filter.values=NULL, quant.list=c(0.025,0.25,0.5,0.75,0.975), start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=TRUE, ...) {
     #Load required packages
     require(data.table)
     require(reshape2)
@@ -170,16 +170,14 @@ freq.simulate <- function(data, probs=1, weight=1, filter.field="group", filter.
         results[bin==unique(bin)[length(unique(bin))], RoC.count:=NA]
         results[bin==unique(bin)[length(unique(bin))], RoC.dummy:=NA]
     }
-        
-    #Save full dataset, if requested
-    if(save.full==TRUE) {write.csv(results, paste("FULL_", filter.values[1], "_simulated_by_period", params, ".csv",sep=""), row.names=FALSE)}
+           
+    #Create summary dataset if required
+    if(summ==TRUE) {
+        summary <- sim.summ(results)
+        results <- list(results, summary)
+    }
     
-    #Create summary dataset and save if requested
-    summary <- sim.summ(results)
-    if(save.summ==TRUE) {write.csv(summary, paste("SUMMARY_", filter.values[1], "_simulated_by_period", params, ".csv", sep=""), row.names=FALSE)}
-
     #Return results
-    if(summ==TRUE) {results <- list(results, summary)}
     results
 }
 
@@ -190,18 +188,15 @@ sim.summ <- function(results, summ.col=NULL, quant.list=c(0.025,0.25,0.5,0.75,0.
     require(data.table)
     require(reshape2)
     
-    if(is.null(summ.col)==TRUE) {summ.col <- 4:ncol(results)}
+    if(is.null(summ.col)==TRUE) {summ.col <- colnames(results)[4:ncol(results)]}
     
     #Create summary tables
     for(i in 1:length(summ.col)) {    
-        data.field <- colnames(results)[summ.col[i]] #save name of column
-        setnames(results, summ.col[i], "count") #set column name to "count" (DT doesn't like dealing with columns by number)
-        x <- results[,quantile(count, probs=quant.list, na.rm=TRUE), by=bin] #calculate quantiles
-        x[,id:=paste(rep(data.field, length(quant.list)), quant.list, sep="_")] #create column to specify quantiles        
-        x <- dcast.data.table(x, bin ~ id, value.var="V1") #convert to wide format
-        setnames(results, summ.col[i], data.field)  #reset column name
-        if(i==1) {summary <- data.table(bin=x[,bin])}
-        summary <- merge(summary, x, by="bin")
+        x <- results[,quantile(get(summ.col[i]), probs=quant.list, na.rm=TRUE), by=bin] #calculate quantiles
+        x[,quantile:=quant.list] #create column to specify quantiles        
+        x[,id:=summ.col[i]] #create column to specify variable       
+        if(i==1) {summary <- data.table()}
+        summary <- rbind(summary, x)
     }   
     
     #Return summary table

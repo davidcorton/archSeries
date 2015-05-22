@@ -1,5 +1,6 @@
 
-axis.setup <- function(results, field.list=NULL, lab.sp=1) {
+axis.setup <- function(results, field.list=NULL, lab.sp=1, main, ylab) {
+    if(is.null(field.list)==TRUE) {field.list <- colnames(results)[4:ncol(results)]}
     minmaxer <- numeric(0)
     for(i in 1:length(field.list)) {minmaxer <- c(minmaxer, get(field.list))}
     minmaxer <- cbind(minmaxer, unique(bin.no))
@@ -9,12 +10,13 @@ axis.setup <- function(results, field.list=NULL, lab.sp=1) {
     axis(1, at=ticks, labels=unique(bin)[ticks], las=2)
 }
 
+#Function to plot full dataset as semi-transparent lines. This is a stand-alone function - calls axis.setup.
+
 lines.chron <- function(results, field.list=NULL, col.list=c("darkred", "darkgreen", "blue", "grey"), opacity=20, lab.sp=1, main="", ylab="Estimated frequency density") {
-    if(class(results)=="list") {results <- results[[1]]}
+    if(class(results)[1]=="list") {results <- results[[1]]}
     attach(results)
     if(is.null(field.list)==TRUE) {field.list <- colnames(results)[4:ncol(results)]}
-        #try to move the above line into axis.setup
-    axis.setup(results, field.list=field.list)
+    axis.setup(results, field.list=field.list, lab.sp=lab.sp, main=main, ylab=ylab)
     col.list <- col.list[1:length(field.list)]
     x <- col2rgb(col.list)
     for(i in 1:length(col.list)) {
@@ -28,3 +30,16 @@ lines.chron <- function(results, field.list=NULL, col.list=c("darkred", "darkgre
     detach(results)
 }
 
+#Function to plot polygons from summary data
+
+poly.chron <- function(results, field.list=NULL, col.list=c("darkred", "darkgreen", "blue", "grey"), opacity=126, med.line=TRUE)
+    if(class(results)[1]=="list") {results <- results[[2]]}
+    attach(results)
+    if(is.null(field.list)==TRUE) {field.list <- unique(id)}
+    x <- c(1:length(unique(bin)), length(unique(bin)):1)
+    for(i in 1:length(field.list)) {
+        y <- c(results[id==field.list[i]&quantile==quant[1], V1], rev(results[id==field.list[i]&quantile==quant[2], V1]))
+        polygon(x,y,col=col.list[i])
+    }
+    detach(results)
+}

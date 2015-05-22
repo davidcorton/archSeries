@@ -20,7 +20,7 @@ rm(context, period, fish, sample)
 
 # 1. Illustrate fish frequencies against dummy set
 set.seed(1901)
-fish <- freq.simulate(sample.period[, list(Start,End)], rep=2000, bin.width=100, RoC=TRUE, summ=TRUE)
+samples <- freq.simulate(sample.period[, list(Start,End)], rep=2000, bin.width=100, RoC=FALSE, summ=TRUE)
 
 #set up axes
 with(fish[[1]], plot(bin.no, count, xlab="", xaxt="n", ylab="Estimated frequency density", type="n"))
