@@ -24,8 +24,8 @@ This is an ongoing project, so this README is intended primarily as a place to u
 * data.table
 * reshape2
 
-###The functions
-The core functions so far are `aorist` and `date.simulate`, which each estimate a chronological distribution from a data table of entities with date ranges, but using two very different approaches. `dummy.simulate` is used to simulate idealised chronological distributions against which empirical results can be compared.
+###Analysis functions
+The core functions so far are `aorist` and `date.simulate`, which each estimate a chronological distribution from a data table of entities with date ranges, but using two very different approaches. `dummy.simulate` is used to simulate idealised chronological distributions against which empirical results can be compared. `freq.simulate` is a wrapper function that calls both `date.simulate` and `dummy.simulate` on the same data. `comp.simulate` uses a factor variable to compare the results of any of the above simulation functions between subsets of a dataset.
 
 ###1. aorist
 Calculates the aoristic sum (*sensu* Crema 2012) from given date ranges for a set of entities, for example representing discrete archaeological contexts or samples. Optionally, these can be weighted, e.g. representing the number of items within a context or the volume of a soil sample. The function uses the data.table package for speed, but is nonetheless quite computationally intensive as we weren't able to vectorise all of the calculations.
@@ -46,7 +46,7 @@ A two-column data table with the aoristic sum itself (numeric) and bin labels (c
 `breaks`: a numeric vector of breaks points.
 `params`: a character value summarising the arguments, for use in naming output files.
 
-##2. comp.simulate
+###2. comp.simulate
 Applies `date.simulate`, `dummy.simulate`, or `freq.simulate` to multiple subsets of a data table, combining the results into a single results table (and, optionally, a single summary results table).
 
 **Arguments**
@@ -72,7 +72,7 @@ Nb. most of these are simply passed to the specified simulation function, so may
 A data table giving the sum of weight for each group, for each bin in each repeat, for both the 'real' and 'dummy' simulations (plus columns for rates of change, if RoC==TRUE).
 If `summ`=TRUE, a list containing the above and a second data table giving the specified quantiles of the full simulation results for each bin, again for both the 'real' and 'dummy' simulations (and for rates of change, if RoC=TRUE).
 
-##3. date.simulate
+###3. date.simulate
 Applies a simulation approach to estimate chronological distribution from given date ranges for a set of entities, for example representing discrete archaeological contexts or samples (this is again based on the procedure described by Crema (2011) and has advantages over `aorist` as set out in that paper). Optionally, the entities can be weighted, e.g. representing the number of items within a context or the volume of a soil sample.
 
 The function simulates a date (year) for each entity, assuming a uniform distribution within the limits of its date range, and places the results into chronological bins of a specified resultion. This process is repeated a specified number of times, allowing the number of points falling into each chronological bin to be estimated, with confidence intervals. Weights are applied **after** sampling, such that heavily weighted entities will tend to increase confidence intervals within their date ranges (this will typically be an appropriately conservative approach in an archaeological scenario).
@@ -99,7 +99,7 @@ A long-format data table giving the sum of weight for each bin in each repeat.
 `breaks`: a numeric vector of breaks points.
 `params`: a character value summarising the arguments, for use in naming output files.
 
-##4. dummy.simulate
+###4. dummy.simulate
 Simulates a 'dummy' chronological distribution within specified date limits by sampling from within a distribution defined by an input vector. Designed for use with date.simulate, particularly within wrapper functions like freq.simulate. The idea here is to simulate chronological distributions based on the same number of entities (with the same weights) as a date.simulate call, but unconstrained by the known date ranges.
 
 **Arguments:**
@@ -117,7 +117,7 @@ Simulates a 'dummy' chronological distribution within specified date limits by s
 **Returns**
 A long-format data table giving the sum of weight for each bin in each repeat.
 
-##5. freq.simulate
+###5. freq.simulate
 Performs both 'real' and dummy simulation (using `date.simulate` and `dummy simulate` respectively) on a set of entities with date ranges and optionally weights so that the two can be compared to detect deviation from a null hypothesis. The dummy set is generated using the same number of entities and the same weights as for the 'real' set. Both the full simulation results and a summary dataset are returned, and optionally also saved as .csv files.
 
 Optionally, the function can also calculate the rate of change (ROC) between each bin and the next in each simulation (for both real and dummy sets). This allows one to test hypotheses concerning increases or decreases at certain points in the time series.
@@ -146,7 +146,7 @@ A list of length two:
 **Also outputs:**
 Depending on arguments, .csv files for full and/or summary results
 
-##6. sim.summ
+###6. sim.summ
 This is a utility function that takes the long-format output from `date.simulate` or `dummy.simulate` and creates a wide-format summary dataset based on specified quantiles.
 
 **Arguments**
@@ -158,6 +158,21 @@ This is a utility function that takes the long-format output from `date.simulate
 **Returns**
 A wide-format data table with a factor column for bin names and a numeric column for each specified quantile.
 
+##Plotting functions
+These functions are all designed to work with the output of the simulate functions above. `box.chron` and `lines.chron` use the full results while `poly.chron` uses summary results, but all will work if passed a list with both full and summary results (i.e. the default output from the simulation functions).
+
+###1. axis.setup
+This is a utility function that scans the data and plots an appropriate set of axes. This will typically be called from within one of the other plotting functions, but can also be used manually.
+
+###2. box.chron
+This plots 
+
+###3. lines.chron
+Plots every single simulation run for each specified variable as a separate semi-transparent line.
+
+###4. poly.chron
+Plots a confidence band for each specified variable.
+
 ##References
 
 * Barrett, J.H., A.M. Locker & C.M. Roberts (2004) The origins of intensive marine fishing in medieval Europe: the English evidence. *Proceedings of the Royal Society of London* B, **271**, 2417-2421.
@@ -165,10 +180,9 @@ A wide-format data table with a factor column for bin names and a numeric column
 
 ##Current issues to work on
 1. tidy up use of filter arguments
-2. tidy up use of summary options
 3. Add progress reporters for ROC routines.
 4. date.simulate: add option to simulate by item rather than by context.
-5. re-write filter/comparison sections to use get() rather than reassigning names
+5. make plotting functions compatible with aorist
 6. New function(s) to generate model distributions to feed into dummy.simulate?
 9. Fix problem with zero values in probs for dummy.simulate.
-11. Make plotting functions.
+
