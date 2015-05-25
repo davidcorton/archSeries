@@ -50,15 +50,19 @@ aorist <- function(data, start.date=0, end.date=2000, bin.width=100, weight=1, p
 
 # Define function to simulate distribution of dates
 
-date.simulate <- function(data, weight=1, filter=NULL, start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=TRUE, ...) {
+date.simulate <- function(data, weight=1, UoA=NULL, context.fields=c("SITE_C", "Site_S"), filter=NULL, start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=TRUE, ...) {
     #Load required package
-    require(data.table)
+    require(data.table) 
     
     #Tidy up input data and apply filters
-    data <- data.table(cbind(data, weight)) #appends weights to list of date ranges, recycling if necessary (e.g. for uniform weight)
+    data <- data.table(cbind(data, weight)) #appends weights to list of date ranges, recycling if necessary (e.g. for uniform weight) 
     if(length(filter)>0 & "group" %in% colnames(data)) {data <- data[group%in%filter,]} #filters data, if appropriate
     data <- data[End >= start.date & Start <= end.date] #excludes ranges that fall entirely outside the study period
-    
+        
+    #Aggregate data
+    agg.list <- c(context.fields, "Start", "End", UoA)
+    data <- data[, j=list(weight=sum(as.numeric(weight))), by=agg.list]
+        
     #Set up breaks and labels
     breaks <<- seq(start.date, end.date, bin.width) #sets breaks and saves them externally
     labels <- numeric(0)
@@ -119,16 +123,14 @@ dummy.simulate <- function(weight, probs=1, breaks=NULL, filter.values=NULL, sta
     #Perform simulation
     rep.no <- rep(1:reps, each=nrow(dummy))
     dummy <- cbind(rep.no, dummy) #recycles input data 'reps' times to provide frame for simulation 
-    p.sum <- sum(as.numeric(probs$probs)) #'stacks up' all the relative probabilities
-    p.breaks <- c(0, cumsum(as.numeric(probs$probs))) #uses cumulative sum of relative probabilities to set breaks
-    dummy[,sim:=runif(nrow(dummy), 0, p.sum)] #samples from within p.sum
-    dummy[,bin:=cut(sim, p.breaks, labels=probs$labels)] #finds the relevant bin for each simulated date
+    dummy[,bin:=sample(labels, size=nrow(dummy), replace=TRUE, prob=probs$probs)]
     dummy <- dummy[is.na(bin)==FALSE, j=list(dummy=sum(as.numeric(weight))), by=list(rep.no,bin)] #sums weights by bin and rep number
     
     #Prepares and returns results table
     frame <- data.table("rep.no"=rep(1:reps, each=length(labels)), "bin.no"=rep(1:length(labels), reps), "bin"=rep(labels, reps))
     results <- merge(frame, dummy, by=c("rep.no", "bin"), all=TRUE)
     results[is.na(results)] <- 0
+    results <- results[order(rep.no, bin.no)]
     
     #Calculate rates of change, if necessary (this is the slow bit, so default is to skip)
     if(RoC==TRUE) {
@@ -150,27 +152,31 @@ dummy.simulate <- function(weight, probs=1, breaks=NULL, filter.values=NULL, sta
 
 # Define function that performs both 'real' and dummy simulation on target bone data
 
-freq.simulate <- function(data, probs=1, weight=1, filter.field="group", filter.values=NULL, quant.list=c(0.025,0.25,0.5,0.75,0.975), start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=TRUE, ...) {
+freq.simulate <- function(data, probs=1, weight=1, UoA=NULL, context.fields=c("SITE_C", "Site_S"), filter.field="group", filter.values=NULL, quant.list=c(0.025,0.25,0.5,0.75,0.975), start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=TRUE, ...) {
     #Load required packages
     require(data.table)
     require(reshape2)
     
     #Tidy up input data; apply filters
-    data <- data.table(data)  #just in case it isn't already in this format
+    data <- data.table(cbind(data, weight)) #appends weights to list of date ranges, recycling if necessary (e.g. for uniform weight) 
     if(is.null(filter.values)==FALSE) {  #if criteria have been provided...
         data <- data[get(filter.field) %in% filter.values,]  #...applies the criteria
     } else {filter.values <- "ALL"} #this is just for the sake of setting 'params' in date.simulate
     data <- data[End >= start.date & Start <= end.date]  #drops records outside the date range FROM BOTH SIMULATION SETS
-    if(length(weight)==1 & is.vector(weight)==TRUE) {weight=rep(weight, nrow(data))} #if weight set as constant, repeats to length of data
+#    if(length(weight)==1 & is.vector(weight)==TRUE) {weight=rep(weight, nrow(data))} #if weight set as constant, repeats to length of data
+    
+    #Aggregate data
+    agg.list <- c(context.fields, "Start", "End", UoA)
+    data <- data[, j=list(weight=sum(as.numeric(weight))), by=agg.list]
     
     #Reset bin.width based on probs, if necessary
     if(is.vector(probs)==TRUE & length(probs)>1) {bin.width <- (end.date-start.date)/length(probs)}  #if probs supplied, use to set bin.widths
     if(sum(class(probs)=="data.frame")==1) {bin.width <- (end.date-start.date)/nrow(probs)}  #likewise if supplied as data.frame/data.table
    
     #Simulate from real data, then generate dummy set. Merge the two together.
-    real <- date.simulate(data=data[,list(Start, End)], weight=weight, bin.width=bin.width, start.date=start.date, end.date=end.date, reps=reps, summ=FALSE)
-    dummy <- dummy.simulate(weight=weight, probs=probs, breaks=breaks, start.date=start.date, end.date=end.date, bin.width=bin.width, reps=reps, summ=FALSE)    
-    results <- merge(real, dummy, by=c("rep.no", "bin", "bin.no"), all=TRUE)
+    real <- date.simulate(data=data, weight=data$weight, context.fields=context.fields, UoA=UoA, bin.width=bin.width, start.date=start.date, end.date=end.date, reps=reps, summ=FALSE)
+    dummy <- dummy.simulate(weight=data$weight, probs=probs, breaks=breaks, start.date=start.date, end.date=end.date, bin.width=bin.width, reps=reps, summ=FALSE)    
+    results <- merge(real, dummy, by=c("rep.no", "bin.no", "bin"), all=TRUE)
     
     #Calculate rate of change variables (could be done within core functions, but faster to loop through together here)
     if(RoC==TRUE) {
@@ -215,23 +221,30 @@ sim.summ <- function(results, summ.col=NULL, quant.list=c(0.025,0.25,0.5,0.75,0.
 }
 
 #Function for comparisons - WORK IN PROGRESS
-comp.simulate <- function(data, probs=1, weight=1, comp.values=NULL, comp.field="group", comp.fun=date.simulate, filter.field="group", filter.values=NULL, quant.list=c(0.025,0.25,0.5,0.75,0.975), start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=TRUE) {
+comp.simulate <- function(data, probs=1, weight=1, comp.values=NULL, comp.field="group", context.fields=c("SITE_C", "Site_S"), UoA=NULL, comp.fun=date.simulate, filter.field="group", filter.values=NULL, quant.list=c(0.025,0.25,0.5,0.75,0.975), start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=TRUE) {
     #Load required packages
     require(data.table)
-    
+        
     #Deal with comparison and filter fields
+    data <- data.table(cbind(data, weight)) #appends weights to list of date ranges, recycling if necessary (e.g. for uniform weight) 
     if(is.null(comp.values)==TRUE) {comp.values <- unique(data[,get(comp.field)])} #compare all values of comp.field if not specified otherwise
     if(filter.field==comp.field) {comp.values <- comp.values[comp.values%in%filter.values]} #removes filtered values from comp.values
     
+    #Aggregate data
+    if(is.null(UoA)==FALSE) {
+        if(UoA==comp.field) {UoA <- NULL}
+    }
+    agg.list <- c(context.fields, "Start", "End", comp.field, UoA)
+    data <- data[, j=list(weight=sum(as.numeric(weight))), by=agg.list]
+    
     #Run the requested function for each group
-    if(length(weight)==1 & is.vector(weight)==TRUE) {weight=rep(weight, nrow(data))} #if weight set as constant, repeats to length of data
     for(i in 1:length(comp.values)) {
-        y <- comp.fun(data=data[get(comp.field)==comp.values[i],], probs=probs, weight=weight[data[,get(comp.field)]==comp.values[i]], filter.field=filter.field, filter.values=filter.values, quant.list=quant.list,
-                 start.date=start.date, end.date=end.date, bin.width=bin.width, reps=reps, RoC=RoC, summ=FALSE)
+        y <- comp.fun(data=data[get(comp.field)==comp.values[i],], probs=probs, weight=data[get(comp.field)==comp.values[i],weight], filter.field=filter.field, filter.values=filter.values, quant.list=quant.list,
+                 UoA=UoA, context.field=context.fields, start.date=start.date, end.date=end.date, bin.width=bin.width, reps=reps, RoC=RoC, summ=FALSE)
         if(class(y)[1]=="list") {y <- y[[1]]} #takes only full results for freq.simulate
         if(i==1) {results <- y[,list(rep.no, bin, bin.no)]}
         setnames(y, old=4:ncol(y), new=paste(comp.values[i], colnames(y)[4:ncol(y)], sep=".")) 
-        results <- merge(results, y, by=c("rep.no", "bin", "bin.no"))
+        results <- merge(results, y, by=c("rep.no", "bin.no", "bin"))
     }
     
     #Create summary dataset if required

@@ -179,10 +179,8 @@ Plots a confidence band for each specified variable.
 * Crema, E. (2012) Modelling temporal uncertainty in archaeological analysis. *Journal of Archaeological Method and Theory*, **19**, 440-461. 
 
 ##Current issues to work on
-1. tidy up use of filter arguments
+1. tidy up and test use of filter arguments (or just remove them as a waste of space?)
 3. Add progress reporters for ROC routines.
-4. date.simulate: add option to simulate by item rather than by context.
 5. make plotting functions compatible with aorist
 6. New function(s) to generate model distributions to feed into dummy.simulate?
-9. Fix problem with zero values in probs for dummy.simulate.
 
