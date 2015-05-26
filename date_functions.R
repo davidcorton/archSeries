@@ -50,7 +50,7 @@ aorist <- function(data, start.date=0, end.date=2000, bin.width=100, weight=1, p
 
 # Define function to simulate distribution of dates
 
-date.simulate <- function(data, weight=1, UoA=NULL, context.fields=c("SITE_C", "Site_S"), filter=NULL, start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=TRUE, ...) {
+date.simulate <- function(data, weight=1, UoA=NULL, context.fields=c("SITE_C", "SITE_S"), filter=NULL, start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=TRUE, ...) {
     #Load required package
     require(data.table) 
     
@@ -118,18 +118,17 @@ dummy.simulate <- function(weight, probs=1, breaks=NULL, filter.values=NULL, sta
     for(i in 1:(length(breaks)-1)) {
         labels[i] <- paste(breaks[i], breaks[i+1], sep="-") #sets bin labels based on breaks
     }
-    probs <- data.table(cbind(probs, labels)) #append labels to relative probs, recycling the latter if necessary
+    probs <- cbind(1:length(labels), probs)
     
     #Perform simulation
     rep.no <- rep(1:reps, each=nrow(dummy))
     dummy <- cbind(rep.no, dummy) #recycles input data 'reps' times to provide frame for simulation 
-    dummy[,bin:=sample(labels, size=nrow(dummy), replace=TRUE, prob=probs$probs)]
-    dummy <- dummy[is.na(bin)==FALSE, j=list(dummy=sum(as.numeric(weight))), by=list(rep.no,bin)] #sums weights by bin and rep number
+    dummy[,bin:=sample(labels, size=nrow(dummy), replace=TRUE, prob=probs[,2])]
+    dummy <- dummy[, j=list(dummy=sum(as.numeric(weight))), by=list(rep.no,bin)] #sums weights by bin and rep number
     
     #Prepares and returns results table
     frame <- data.table("rep.no"=rep(1:reps, each=length(labels)), "bin.no"=rep(1:length(labels), reps), "bin"=rep(labels, reps))
     results <- merge(frame, dummy, by=c("rep.no", "bin"), all=TRUE)
-    results[is.na(results)] <- 0
     results <- results[order(rep.no, bin.no)]
     
     #Calculate rates of change, if necessary (this is the slow bit, so default is to skip)
@@ -152,7 +151,7 @@ dummy.simulate <- function(weight, probs=1, breaks=NULL, filter.values=NULL, sta
 
 # Define function that performs both 'real' and dummy simulation on target bone data
 
-freq.simulate <- function(data, probs=1, weight=1, UoA=NULL, context.fields=c("SITE_C", "Site_S"), filter.field="group", filter.values=NULL, quant.list=c(0.025,0.25,0.5,0.75,0.975), start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=TRUE, ...) {
+freq.simulate <- function(data, probs=1, weight=1, UoA=NULL, context.fields=c("SITE_C", "SITE_S"), filter.field="group", filter.values=NULL, quant.list=c(0.025,0.25,0.5,0.75,0.975), start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=TRUE, ...) {
     #Load required packages
     require(data.table)
     require(reshape2)
@@ -221,7 +220,7 @@ sim.summ <- function(results, summ.col=NULL, quant.list=c(0.025,0.25,0.5,0.75,0.
 }
 
 #Function for comparisons - WORK IN PROGRESS
-comp.simulate <- function(data, probs=1, weight=1, comp.values=NULL, comp.field="group", context.fields=c("SITE_C", "Site_S"), UoA=NULL, comp.fun=date.simulate, filter.field="group", filter.values=NULL, quant.list=c(0.025,0.25,0.5,0.75,0.975), start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=TRUE) {
+comp.simulate <- function(data, probs=1, weight=1, comp.values=NULL, comp.field="group", context.fields=c("SITE_C", "SITE_S"), UoA=NULL, comp.fun=date.simulate, filter.field="group", filter.values=NULL, quant.list=c(0.025,0.25,0.5,0.75,0.975), start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=TRUE) {
     #Load required packages
     require(data.table)
         
