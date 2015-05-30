@@ -101,31 +101,37 @@ lines.chron(doms, main="Abundance of major domesticates")
 #poly.chron(all.fish.frags.samples, field.list=c("dummy", "count"), col.list=c("grey", "darkred"), main="Abundance of fish in samples (50-yr bins; dummy based on counts)")
 #poly.chron(all.fish.frags.samples, field.list=c("RoC.dummy", "RoC.count"), col.list=c("grey", "darkred"), main="Simulated rates of change in fish from samples (dummy<-counts)", ylab="Estimated rate of change (%)")
 
-all.fish.frags.vol <- freq.simulate(zoo.period[CLASS=="fish"], weight=zoo.period[CLASS=="fish"]$FRAG_COUNT, probs=sample.vol$aorist, reps=1000, RoC=TRUE)
-poly.chron(all.fish.frags.vol, field.list=c("dummy", "count"), col.list=c("grey", "darkred"), main="Abundance of fish in samples (50-yr bins; dummy based on volumes)", lab.sp=2)
-poly.chron(all.fish.frags.vol, field.list=c("RoC.dummy", "RoC.count"), col.list=c("grey", "darkred"), main="Simulated rates of change in fish from samples (dummy<-volume)", ylab="Estimated rate of change (%)")
+all.fish.frags.vol <- freq.simulate(zoo.period[CLASS=="fish"], weight=zoo.period[CLASS=="fish"]$FRAG_COUNT, probs=sample.vol$aorist, reps=1000, RoC=FALSE)
+poly.chron(all.fish.frags.vol, field.list=c("dummy", "count"), col.list=c("grey", "darkred"), main="Abundance of fish in samples (50-yr bins)", lab.sp=2)
+#poly.chron(all.fish.frags.vol, field.list=c("RoC.dummy", "RoC.count"), col.list=c("grey", "darkred"), main="Simulated rates of change in fish from samples (dummy<-volume)", ylab="Estimated rate of change (%)")
+
+axis.setup(all.fish.frags.vol, main="Simulated distribution of London fish (50-yr bins)", lab.sp=2)
+poly.chron(all.fish.frags.vol, field.list="dummy", col.list="grey", add=TRUE)
+box.chron(all.fish.frags.vol, field.list="count", col.list="darkred", add=TRUE)
+
+#Remove anomalous deposit
+fish.period <- fish.period[!Frag==1000,]
 
 #fresh.samples <- freq.simulate(fish.period[Fresh_Marine%in%c("Fresh", "Fresh/Marine")], weight=fish.period[Fresh_Marine%in%c("Fresh", "Fresh/Marine")]$Frag, probs=sample.count$aorist, reps=1000, RoC=TRUE)
 #poly.chron(fresh.samples, field.list=c("dummy", "count"), col.list=c("grey", "darkgreen"), main="Freshwater/migratory fish in samples (dummy<-samples)", lab.sp=2)
 #poly.chron(fresh.samples, field.list=c("RoC.dummy", "RoC.count"), col.list=c("grey", "darkgreen"), main="Freshwater/migratory fish in samples (dummy<-samples)", ylab="Estimated rate of change (%)", lab.sp=2)
 
-fresh.vols <- freq.simulate(fish.period[Fresh_Marine%in%c("Fresh", "Fresh/Marine")], weight=fish.period[Fresh_Marine%in%c("Fresh", "Fresh/Marine")]$Frag, probs=sample.vol$aorist, reps=1000, RoC=TRUE)
-poly.chron(fresh.vols, field.list=c("dummy", "count"), col.list=c("grey", "darkgreen"), main="Freshwater/migratory fish in samples (dummy<-volumes)", lab.sp=2)
-poly.chron(fresh.vols, field.list=c("RoC.dummy", "RoC.count"), col.list=c("grey", "darkgreen"), main="Freshwater/migratory fish in samples (dummy<-volumes)", ylab="Estimated rate of change (%)", lab.sp=2)
+fresh.vols <- freq.simulate(fish.period[Fresh_Marine%in%c("Fresh", "Fresh/Marine")], weight=fish.period[Fresh_Marine%in%c("Fresh", "Fresh/Marine")]$Frag, probs=sample.vol$aorist, reps=1000, RoC=FALSE)
+poly.chron(fresh.vols, field.list=c("dummy", "count"), col.list=c("grey", "darkgreen"), main="Freshwater/migratory fish in environmental samples", lab.sp=2)
+#poly.chron(fresh.vols, field.list=c("RoC.dummy", "RoC.count"), col.list=c("grey", "darkgreen"), main="Freshwater/migratory fish in samples (dummy<-volumes)", ylab="Estimated rate of change (%)", lab.sp=2)
 
 #marine.samples <- freq.simulate(fish.period[Fresh_Marine=="Marine"], weight=fish.period[Fresh_Marine=="Marine"]$Frag, probs=sample.count$aorist, reps=1000, RoC=TRUE)
 #poly.chron(marine.samples, field.list=c("dummy", "count"), col.list=c("grey", "darkblue"), main="Marine fish in samples (dummy<-samples)", lab.sp=2)
 #poly.chron(marine.samples, field.list=c("RoC.dummy", "RoC.count"), col.list=c("grey", "darkblue"), main="Marine fish in samples (dummy<-samples)", ylab="Estimated rate of change (%)", lab.sp=2)
 
-marine.vols <- freq.simulate(fish.period[Fresh_Marine=="Marine"], weight=fish.period[Fresh_Marine=="Marine"]$Frag, probs=sample.vol$aorist, reps=1000, RoC=TRUE)
-poly.chron(marine.vols, field.list=c("dummy", "count"), col.list=c("grey", "darkblue"), main="Marine fish in samples (dummy<-volumes)", lab.sp=2)
-poly.chron(marine.vols, field.list=c("RoC.dummy", "RoC.count"), col.list=c("grey", "darkblue"), main="Marine fish in samples (dummy<-volumes)", ylab="Estimated rate of change (%)", lab.sp=2)
-
+marine.vols <- freq.simulate(fish.period[Fresh_Marine=="Marine"], weight=fish.period[Fresh_Marine=="Marine"]$Frag, probs=sample.vol$aorist, reps=1000, RoC=FALSE)
+poly.chron(marine.vols, field.list=c("dummy", "count"), col.list=c("grey", "darkblue"), main="Marine fish in environmental samples", lab.sp=2)
+#poly.chron(marine.vols, field.list=c("RoC.dummy", "RoC.count"), col.list=c("grey", "darkblue"), main="Marine fish in samples (dummy<-volumes)", ylab="Estimated rate of change (%)", lab.sp=2)
 
 #6 catch per unit
 all.mammal.frags <- freq.simulate(zoo.period[CLASS=="mammal"], weight=zoo.period[CLASS=="mammal"]$FRAG_COUNT, bin.width=50, reps=1000, RoC=TRUE)
 
-fresh <- cbind(fresh.samples[[2]], mam=all.mammal.frags[[2]]$V1)
+fresh <- cbind(fresh.vols[[2]], mam=all.mammal.frags[[2]][id=="count", V1])
 fresh <- fresh[order(quantile)]
 fresh <- cbind(fresh, litres=sample.vol$aorist, n=sample.count$aorist)
 fresh[,cpl:=V1/litres]
@@ -135,8 +141,7 @@ poly.chron(fresh, field.list="count", col.list="darkgreen", value.field="cpl", m
 poly.chron(fresh, field.list="count", col.list="darkgreen", value.field="cps", main="Freshwater/migratory fish bones per sample", ylab="Estimated frequency per sample", legend=FALSE, lab.sp=2)
 poly.chron(fresh, field.list="count", col.list="darkgreen", value.field="cpm", main="Freshwater/migratory fish per mammal bone", ylab="Estimated fish / mammal", legend=FALSE, lab.sp=2)
 
-
-marine <- cbind(marine.samples[[2]], mam=all.mammal.frags[[2]]$V1)
+marine <- cbind(marine.vols[[2]], mam=all.mammal.frags[[2]][id=="count", V1])
 marine <- marine[order(quantile)]
 marine <- cbind(marine, litres=sample.vol$aorist, n=sample.count$aorist)
 marine[,cpl:=V1/litres]
@@ -150,20 +155,20 @@ col2rgb("darkgreen")
 legend.blue <- rgb(0,0,139,126, maxColorValue=255)
 legend.green <- rgb(0,100,0,126, maxColorValue=255)
 
-axis.setup(marine, field.list=c("count"), main="Fish bones per litre", value.field="cpl", ylab="Estimated frequency per litre", lab.sp=1, type="summary")
+axis.setup(fresh, field.list=c("count"), main="Fish bones per litre", value.field="cpl", ylab="Estimated frequency per litre", lab.sp=1, type="summary")
 poly.chron(fresh, field.list="count", col.list="darkgreen", value.field="cpl", add=TRUE, legend=FALSE)
 poly.chron(marine, field.list="count", col.list="darkblue", value.field="cpl", add=TRUE, legend=FALSE)
-legend("topleft", legend=c("Freshwater/migratory", "Marine"), fill=c(legend.green, legend.blue), bty="n")
+legend("topright", legend=c("Freshwater/migratory", "Marine"), fill=c(legend.green, legend.blue), bty="n")
 
-axis.setup(marine, field.list=c("count"), main="Fish bones per sample", value.field="cps", ylab="Estimated frequency per sample", lab.sp=1, type="summary")
+axis.setup(fresh, field.list=c("count"), main="Fish bones per sample", value.field="cps", ylab="Estimated frequency per sample", lab.sp=1, type="summary")
 poly.chron(fresh, field.list="count", col.list="darkgreen", value.field="cps", add=TRUE, legend=FALSE)
 poly.chron(marine, field.list="count", col.list="darkblue", value.field="cps", add=TRUE, legend=FALSE)
-legend("topleft", legend=c("Freshwater/migratory", "Marine"), fill=c(legend.green, legend.blue), bty="n")
+legend("topright", legend=c("Freshwater/migratory", "Marine"), fill=c(legend.green, legend.blue), bty="n")
 
-axis.setup(marine, field.list=c("count"), main="Fish bones per mammal", value.field="cpm", ylab="Estimated fish / mammal", lab.sp=1, type="summary")
+axis.setup(fresh, field.list=c("count"), main="Fish bones per mammal", value.field="cpm", ylab="Estimated fish / mammal", lab.sp=1, type="summary")
 poly.chron(fresh, field.list="count", col.list="darkgreen", value.field="cpm", add=TRUE, legend=FALSE)
 poly.chron(marine, field.list="count", col.list="darkblue", value.field="cpm", add=TRUE, legend=FALSE)
-legend("topleft", legend=c("Freshwater/migratory", "Marine"), fill=c(legend.green, legend.blue), bty="n")
+legend("topright", legend=c("Freshwater/migratory", "Marine"), fill=c(legend.green, legend.blue), bty="n")
 
 
 ####

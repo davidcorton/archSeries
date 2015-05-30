@@ -54,7 +54,7 @@ poly.chron <- function(results, field.list=NULL, quant=c(0.025, 0.975), col.list
         skip <- length(x)+1       
         if(substr(field.list[i],1,3)=="RoC") {skip <- length(unique(results$bin))}
         polygon(x[!x==skip],y[!x==skip],col=b[i])
-        if(med.line==TRUE) {with(results[id==field.list[i]&quantile==0.500], lines(1:length(unique(bin)), get(value.field), col=col.list[i]))}
+        if(med.line==TRUE) {with(results[id==field.list[i]&quantile==0.500], lines(1:length(unique(bin)), get(value.field), col=col.list[i], lwd=2))}
     }
     if(legend==TRUE) {with(results, legend("topright", legend=field.list, fill=b, bty="n"))}
 }
