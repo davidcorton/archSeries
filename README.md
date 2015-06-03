@@ -1,6 +1,8 @@
 #archSeries
 ##Archaeological time series tools
 
+##Nb. THIS DOCUMENT IS NOT 100% UP-TO-DATE. UPDATES COMING SOON
+
 ###Contributors so far
 * David Orton, BioArCh, Department of Archaeology, University of York
 * James Morris, School of Forensic and Investigative Sciences, University of Central Lancashire
@@ -180,7 +182,8 @@ Plots a confidence band for each specified variable.
 
 ##Current issues to work on
 1. tidy up and test use of filter arguments (or just remove them as a waste of space?)
-3. Add progress reporters for ROC routines.
-5. make plotting functions compatible with aorist
+2. Add progress reporters for ROC routines.
+3. Write cpue function that simulates numerator and denominator simultaneously
+4. Update freq.simulate and comp.simulate to simulate context date ranges only once
+5. make plotting function compatible with aorist
 6. New function(s) to generate model distributions to feed into dummy.simulate?
-
