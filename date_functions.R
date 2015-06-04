@@ -50,13 +50,12 @@ aorist <- function(data, start.date=0, end.date=2000, bin.width=100, weight=1, p
 
 # Define function to simulate distribution of dates
 
-date.simulate <- function(data, weight=1, UoA=NULL, context.fields=c("SITE_C", "SITE_S"), filter=NULL, start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=TRUE, ...) {
+date.simulate <- function(data, weight=1, UoA=NULL, context.fields=c("SITE_C", "SITE_S"), start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=TRUE, ...) {
     #Load required package
     require(data.table) 
     
     #Tidy up input data and apply filters
     data <- data.table(cbind(data, weight)) #appends weights to list of date ranges, recycling if necessary (e.g. for uniform weight) 
-    if(length(filter)>0 & "group" %in% colnames(data)) {data <- data[group%in%filter,]} #filters data, if appropriate
     data <- data[End >= start.date & Start <= end.date] #excludes ranges that fall entirely outside the study period
         
     #Aggregate data
@@ -103,14 +102,13 @@ date.simulate <- function(data, weight=1, UoA=NULL, context.fields=c("SITE_C", "
 
 # Define function to simulate a dummy set by sampling from within a specified distribution
 
-dummy.simulate <- function(weight, probs=1, breaks=NULL, filter.values=NULL, start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=TRUE, ...) {
+dummy.simulate <- function(weight, probs=1, breaks=NULL, start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=TRUE, ...) {
     #Load required package
     require(data.table)
     
     #Tidy up input data and apply filters
     if(is.vector(weight)==1 & length(weight)==1) {weight <- rep(1, weight)} #if weight is a single value, use as number of entities
     dummy <- data.table(weight) #convert weights to data table format, if necessary.
-    if(length(filter.values)>0 & "group"%in%colnames(dummy)) {dummy <- dummy[group%in%filter.values,]} #filter if appropriate
     
     #Set up breaks and labels
     if(is.null(breaks)==TRUE) {breaks <- seq(start.date, end.date, bin.width)} #if breaks not specified, sets them based on other arguments
@@ -151,18 +149,14 @@ dummy.simulate <- function(weight, probs=1, breaks=NULL, filter.values=NULL, sta
 
 # Define function that performs both 'real' and dummy simulation on target bone data
 
-freq.simulate <- function(data, probs=1, weight=1, UoA=NULL, context.fields=c("SITE_C", "SITE_S"), filter.field="group", filter.values=NULL, quant.list=c(0.025,0.25,0.5,0.75,0.975), start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=TRUE, ...) {
+freq.simulate <- function(data, probs=1, weight=1, UoA=NULL, context.fields=c("SITE_C", "SITE_S"), quant.list=c(0.025,0.25,0.5,0.75,0.975), start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=TRUE, ...) {
     #Load required packages
     require(data.table)
     require(reshape2)
     
     #Tidy up input data; apply filters
     data <- data.table(cbind(data, weight)) #appends weights to list of date ranges, recycling if necessary (e.g. for uniform weight) 
-    if(is.null(filter.values)==FALSE) {  #if criteria have been provided...
-        data <- data[get(filter.field) %in% filter.values,]  #...applies the criteria
-    } else {filter.values <- "ALL"} #this is just for the sake of setting 'params' in date.simulate
     data <- data[End >= start.date & Start <= end.date]  #drops records outside the date range FROM BOTH SIMULATION SETS
-#    if(length(weight)==1 & is.vector(weight)==TRUE) {weight=rep(weight, nrow(data))} #if weight set as constant, repeats to length of data
     
     #Aggregate data
     agg.list <- c(context.fields, "Start", "End", UoA)
@@ -220,14 +214,13 @@ sim.summ <- function(results, summ.col=NULL, quant.list=c(0.025,0.25,0.5,0.75,0.
 }
 
 #Function for comparisons - WORK IN PROGRESS
-comp.simulate <- function(data, probs=1, weight=1, comp.values=NULL, comp.field="group", context.fields=c("SITE_C", "SITE_S"), UoA=NULL, comp.fun=date.simulate, filter.field="group", filter.values=NULL, quant.list=c(0.025,0.25,0.5,0.75,0.975), start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=TRUE) {
+comp.simulate <- function(data, probs=1, weight=1, comp.values=NULL, comp.field="group", context.fields=c("SITE_C", "SITE_S"), UoA=NULL, comp.fun=date.simulate, quant.list=c(0.025,0.25,0.5,0.75,0.975), start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=TRUE) {
     #Load required packages
     require(data.table)
         
     #Deal with comparison and filter fields
     data <- data.table(cbind(data, weight)) #appends weights to list of date ranges, recycling if necessary (e.g. for uniform weight) 
     if(is.null(comp.values)==TRUE) {comp.values <- unique(data[,get(comp.field)])} #compare all values of comp.field if not specified otherwise
-    if(filter.field==comp.field) {comp.values <- comp.values[comp.values%in%filter.values]} #removes filtered values from comp.values
     
     #Aggregate data
     if(is.null(UoA)==FALSE) {
@@ -256,4 +249,62 @@ comp.simulate <- function(data, probs=1, weight=1, comp.values=NULL, comp.field=
     results
 }
 
+##CPUE function
+# needs to take two 
 
+cpue <- function(x, y, weight.x=1, weight.y=1, context.fields=c("SITE_C"), start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=TRUE, ...) {
+    #Load required package
+    require(data.table)
+    
+    #Tidy up input data and apply filters
+    x <- data.table(cbind(x, weight.x)) #appends weights to list of date ranges, recycling if necessary (e.g. for uniform weight) 
+    x <- x[End >= start.date & Start <= end.date] #excludes ranges that fall entirely outside the study period
+    y <- data.table(cbind(y, weight.y)) #appends weights to list of date ranges, recycling if necessary (e.g. for uniform weight) 
+    y <- y[End >= start.date & Start <= end.date] #excludes ranges that fall entirely outside the study period
+    
+    #Aggregate data
+    x <- x[, j=list(weight.x=sum(as.numeric(weight.x))), by=c(context.fields, "Start", "End")]
+    y <- y[, j=list(weight.y=sum(as.numeric(weight.y))), by=c(context.fields, "Start", "End")]
+    data <- merge(x,y,by=c(context.fields, "Start", "End"), all=TRUE)
+    
+    #Set up breaks and labels
+    breaks <<- seq(start.date, end.date, bin.width) #sets breaks and saves them externally
+    labels <- numeric(0)
+    for(i in 1:(length(breaks)-1)) {
+        labels[i] <- paste(breaks[i], breaks[i+1], sep="-") #sets bin labels
+    }
+    
+    #Perform simulation
+    rep.no <- rep(1:reps, each=nrow(data))
+    data <- cbind(rep.no, data) #recycles input data 'reps' times to provide frame for simulation 
+    data[,sim:={x<-runif(nrow(data)); (x*(data[,End]-data[,Start]))+data[,Start]}] #simulates a date for each row
+    data[,bin:=cut(sim,breaks,labels=labels)] #finds the relevant bin for each simulated date
+    
+    #Prepare results table
+    x <- data[is.na(weight.x)==FALSE&is.na(bin)==FALSE, j=list(x=sum(as.numeric(weight.x))), by=list(rep.no,bin)] #sums weights by bin and rep number
+    y <- data[is.na(weight.y)==FALSE&is.na(bin)==FALSE, j=list(y=sum(as.numeric(weight.y))), by=list(rep.no,bin)] #sums weights by bin and rep number
+    frame <- data.table(rep.no=rep(1:reps, each=length(labels)), bin.no=rep(1:length(labels), reps), bin=rep(labels, reps))
+    results <- merge(frame, x=x, by=c("rep.no", "bin"), all=TRUE)
+    results <- merge(results, y=y, by=c("rep.no", "bin"), all=TRUE)
+    results[,cpue:=x/y]
+    results[is.na(results)] <- 0
+    
+    #Calculate rates of change, if necessary (this is the slow bit, so default is to skip)
+    if(RoC==TRUE) {
+        for(i in 1:(nrow(results)-1)) {
+            results[i,RoC:=(results[i+1,cpue]-results[i,cpue])/bin.width]
+        }
+        results[bin==labels[length(labels)], RoC:=NA]
+    }
+    
+    #Create summary dataset if required
+    if(summ==TRUE) {
+        summary <- sim.summ(results)
+        results <- list(results, summary)
+    }
+    
+    #Return results
+    results
+    
+}
+    
