@@ -213,12 +213,12 @@ sim.summ <- function(results, summ.col=NULL, quant.list=c(0.025,0.25,0.5,0.75,0.
     summary
 }
 
-#Function for comparisons - WORK IN PROGRESS
+#Function for comparisons
 comp.simulate <- function(data, probs=1, weight=1, comp.values=NULL, comp.field="group", context.fields=c("SITE_C", "SITE_S"), UoA=NULL, comp.fun=date.simulate, quant.list=c(0.025,0.25,0.5,0.75,0.975), start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=TRUE) {
     #Load required packages
     require(data.table)
         
-    #Deal with comparison and filter fields
+    #Deal with comparison field
     data <- data.table(cbind(data, weight)) #appends weights to list of date ranges, recycling if necessary (e.g. for uniform weight) 
     if(is.null(comp.values)==TRUE) {comp.values <- unique(data[,get(comp.field)])} #compare all values of comp.field if not specified otherwise
     
@@ -228,12 +228,13 @@ comp.simulate <- function(data, probs=1, weight=1, comp.values=NULL, comp.field=
     }
     agg.list <- c(context.fields, "Start", "End", comp.field, UoA)
     data <- data[, j=list(weight=sum(as.numeric(weight))), by=agg.list]
+#    form <- as.formula(paste(paste(context.fields, collapse='+'), "+Start+End ~ ", comp.field))
+#    data <- dcast.data.table(data=data, formula=form, value.var="weight",fun.aggregate=sum)
     
     #Run the requested function for each group
     for(i in 1:length(comp.values)) {
         y <- comp.fun(data=data[get(comp.field)==comp.values[i],], probs=probs, weight=data[get(comp.field)==comp.values[i],weight], filter.field=filter.field, filter.values=filter.values, quant.list=quant.list,
                  UoA=UoA, context.field=context.fields, start.date=start.date, end.date=end.date, bin.width=bin.width, reps=reps, RoC=RoC, summ=FALSE)
-        if(class(y)[1]=="list") {y <- y[[1]]} #takes only full results for freq.simulate
         if(i==1) {results <- y[,list(rep.no, bin, bin.no)]}
         setnames(y, old=4:ncol(y), new=paste(comp.values[i], colnames(y)[4:ncol(y)], sep=".")) 
         results <- merge(results, y, by=c("rep.no", "bin.no", "bin"))
@@ -250,7 +251,6 @@ comp.simulate <- function(data, probs=1, weight=1, comp.values=NULL, comp.field=
 }
 
 ##CPUE function
-# needs to take two 
 
 cpue <- function(x, y, weight.x=1, weight.y=1, context.fields=c("SITE_C"), start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=TRUE, ...) {
     #Load required package
@@ -307,4 +307,40 @@ cpue <- function(x, y, weight.x=1, weight.y=1, context.fields=c("SITE_C"), start
     results
     
 }
+
+# Function to convert results to survivorship format
+surv.convert <- function(results, field.list=NULL, summ=TRUE)
+    #Load required package
+    require(data.table)
     
+    #Select only full results (if applicable); establish field names to use
+    if(class(results)[1]=="list") {results <- results[[1]]}
+    if(is.null(field.list)==TRUE) {field.list <- colnames(results)[4:ncol(results)]}
+    
+    #Build new data table for results
+    frame <- data.table(rep.no=rep(1:max(results$rep.no), each=(max(results$bin.no)+1)), bin.no=rep(1:(max(results$bin.no)+1)), bin=rep(c("Start", unique(as.character(results$bin))), max(results$rep.no)))
+    column.names <- paste("survive.", field.list, sep="")
+    
+    #Calculate survivorship for each column, run, and bin (nested in that order)
+    for(k in 1:length(field.list)) {
+        frame[bin.no==1, assign("a", column.names[k]):=1]
+        frame[bin.no==max(results$bin.no)+1, get(column.name):=0]
+        for(i in 1:max(frame$rep.no)) {
+            for(j in 2:max(results$bin.no)) {
+                frame[rep.no==i&bin.no==j, get(column.name):=frame[rep.no==i&bin.no==j-1, get(column.name)]
+                  - (results[rep.no==i&bin.no==j-1, get(field.list[k])] / results[rep.no==1, sum(get(field.list[k]))])]
+            }
+        }
+    }
+
+    #Create summary dataset if required
+    if(summ==TRUE) {
+        summary <- sim.summ(frame)
+        frame <- list(frame, summary)
+    }
+
+    #Return results
+    frame
+}
+
+
