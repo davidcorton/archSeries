@@ -82,11 +82,9 @@ date.simulate <- function(data, weight=1, UoA=NULL, context.fields=c("SITE_C", "
     results <- merge(frame, data, by=c("rep.no", "bin"), all=TRUE)
     results[is.na(results)] <- 0
     
-    #Calculate rates of change, if necessary (this is the slow bit, so default is to skip)
+    #Calculate rates of change, if necessary
     if(RoC==TRUE) {
-        for(i in 1:(nrow(results)-1)) {
-            results[i,RoC:=(results[i+1,count]-results[i,count])/bin.width]
-        }
+        results[, RoC:=c(diff(count), NA)]
         results[bin==labels[length(labels)], RoC:=NA]
     }
     
@@ -127,13 +125,12 @@ dummy.simulate <- function(weight, probs=1, breaks=NULL, start.date=0, end.date=
     #Prepares and returns results table
     frame <- data.table("rep.no"=rep(1:reps, each=length(labels)), "bin.no"=rep(1:length(labels), reps), "bin"=rep(labels, reps))
     results <- merge(frame, dummy, by=c("rep.no", "bin"), all=TRUE)
+    results[is.na(dummy), dummy:=0]
     results <- results[order(rep.no, bin.no)]
     
-    #Calculate rates of change, if necessary (this is the slow bit, so default is to skip)
+    #Calculate rates of change, if necessary
     if(RoC==TRUE) {
-        for(i in 1:(nrow(results)-1)) {
-            results[i,RoC:=(results[i+1,dummy]-results[i,dummy])/bin.width]
-        }
+        results[, RoC:=c(diff(dummy), NA)]
         results[bin==labels[length(labels)], RoC:=NA]
     }
     
@@ -173,10 +170,8 @@ freq.simulate <- function(data, probs=1, weight=1, UoA=NULL, context.fields=c("S
     
     #Calculate rate of change variables (could be done within core functions, but faster to loop through together here)
     if(RoC==TRUE) {
-        for(i in 1:(nrow(results)-1)) {
-            results[i,RoC.count:=(results[i+1,count]-results[i,count])/bin.width]
-            results[i,RoC.dummy:=(results[i+1,dummy]-results[i,dummy])/bin.width]
-        }
+        results[, RoC.count:=c(diff(count), NA)]
+        results[, RoC.dummy:=c(diff(dummy), NA)]
         results[bin==unique(bin)[length(unique(bin))], RoC.count:=NA]
         results[bin==unique(bin)[length(unique(bin))], RoC.dummy:=NA]
     }
@@ -289,11 +284,9 @@ cpue <- function(x, y, weight.x=1, weight.y=1, context.fields=c("SITE_C"), start
     results[,cpue:=x/y]
     results[is.na(results)] <- 0
     
-    #Calculate rates of change, if necessary (this is the slow bit, so default is to skip)
+    #Calculate rates of change, if necessary
     if(RoC==TRUE) {
-        for(i in 1:(nrow(results)-1)) {
-            results[i,RoC:=(results[i+1,cpue]-results[i,cpue])/bin.width]
-        }
+        results[, RoC:=c(diff(cpue), NA)]
         results[bin==labels[length(labels)], RoC:=NA]
     }
     
@@ -309,7 +302,7 @@ cpue <- function(x, y, weight.x=1, weight.y=1, context.fields=c("SITE_C"), start
 }
 
 # Function to convert results to survivorship format
-surv.convert <- function(results, field.list=NULL, summ=TRUE)
+surv.convert <- function(results, field.list=NULL, summ=TRUE) {
     #Load required package
     require(data.table)
     
@@ -323,12 +316,12 @@ surv.convert <- function(results, field.list=NULL, summ=TRUE)
     
     #Calculate survivorship for each column, run, and bin (nested in that order)
     for(k in 1:length(field.list)) {
-        frame[bin.no==1, assign("a", column.names[k]):=1]
-        frame[bin.no==max(results$bin.no)+1, get(column.name):=0]
+        frame[,assign("a", column.names[k]):=0]
+        frame[bin.no==1, column.names[k]:=1]
         for(i in 1:max(frame$rep.no)) {
             for(j in 2:max(results$bin.no)) {
-                frame[rep.no==i&bin.no==j, get(column.name):=frame[rep.no==i&bin.no==j-1, get(column.name)]
-                  - (results[rep.no==i&bin.no==j-1, get(field.list[k])] / results[rep.no==1, sum(get(field.list[k]))])]
+                frame[rep.no==i&bin.no==j, assign("a", column.names[k]):=frame[rep.no==i&bin.no==j-1, get(column.names[k])]
+                      - (results[rep.no==i&bin.no==j-1, get(field.list[k])] / results[rep.no==1, sum(get(field.list[k]))])]
             }
         }
     }
