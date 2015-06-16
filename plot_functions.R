@@ -18,7 +18,7 @@ axis.setup <- function(results, field.list=NULL, value.field="V1", lab.sp=1, mai
 
 #Function to plot full dataset as semi-transparent lines. This is a stand-alone function - calls axis.setup.
 
-lines.chron <- function(results, field.list=NULL, col.list=c("darkred", "darkgreen", "blue", "grey"), opacity=20, lab.sp=1, main="", ylab="Estimated frequency density", add=FALSE, legend=TRUE) {
+lines.chron <- function(results, field.list=NULL, col.list=c("darkred", "darkgreen", "blue", "grey", "goldenrod"), opacity=20, lab.sp=1, main="", ylab="Estimated frequency density", add=FALSE, legend=TRUE) {
     if(class(results)[1]=="list") {results <- results[[1]]}
     if(is.null(field.list)==TRUE) {field.list <- colnames(results)[4:ncol(results)]}
     if(add==FALSE) {axis.setup(results, field.list=field.list, lab.sp=lab.sp, main=main, ylab=ylab)}
@@ -38,7 +38,7 @@ lines.chron <- function(results, field.list=NULL, col.list=c("darkred", "darkgre
 
 #Function to plot polygons from summary data
 
-poly.chron <- function(results, field.list=NULL, quant=c(0.025, 0.975), col.list=c("darkred", "darkgreen", "blue", "grey"), opacity=126, value.field="V1", lab.sp=1, main="", ylab="Estimated frequency density", med.line=TRUE, add=FALSE, legend=TRUE) {
+poly.chron <- function(results, field.list=NULL, quant=c(0.025, 0.975), col.list=c("darkred", "darkgreen", "blue", "grey", "goldenrod"), opacity=126, value.field="V1", lab.sp=1, main="", ylab="Estimated frequency density", med.line=TRUE, add=FALSE, legend=TRUE) {
     if(class(results)[1]=="list") {results <- results[[2]]}
     if(is.null(field.list)==TRUE) {field.list <- unique(results$id)}
     if(add==FALSE) {axis.setup(results, field.list=field.list, lab.sp=lab.sp, main=main, ylab=ylab, value.field=value.field, type="summary")}

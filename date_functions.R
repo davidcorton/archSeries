@@ -1,40 +1,16 @@
 # Define function to calculate aoristic sum
 
-aorist <- function(data, start.date=0, end.date=2000, bin.width=100, weight=1, progress=TRUE) { 
+aorist <- function(data, start.date=0, end.date=2000, bin.width=100, weight=1) { 
     #Load required package
     require(data.table)
     
     #Tidies up input data
     data <- cbind(data, weight) #appends weights to list of date ranges, recycling if necessary (e.g. for uniform weight)
     data <- data[End >= start.date & Start <= end.date] #excludes ranges that fall entirely outside the study period
-    
-    #Detect first full bin after start & last full bin before end (yes, this seems wrong for short ranges - bear with me.)
-    data[,first.full:=ceiling((Start-start.date)/bin.width)+1] #finds number of first bin fully after Start
-    data[,last.full:=floor((End-start.date)/bin.width)] #finds the number of the last bin fully before End
-    
-    #Find extent of overlap with lead-in and lead-out bins for each date range
-    data[,lead.in:=(ceiling((Start-start.date)/bin.width)-((Start-start.date)/bin.width))*bin.width]
-    data[,lead.out:=(((End-start.date)/bin.width)-floor((End-start.date)/bin.width))*bin.width]
-    
-    #Work out probability mass to be assigned to whole bins and to lead-in and lead-out bins
-    data[,diff:=last.full-first.full]
-    data[,duration:={ifelse(diff==-2, lead.in+lead.out, End-Start)}] #finds duration of range (special case where w/in single bin)
-    data[,full.prob:=(bin.width/duration)*weight] #sets prob. mass to be assigned to bins fully within range (then applies weight)
-    data[,in.prob:=(lead.in/duration)*weight] #sets prob. mass to be assigned to the lead-in bin (then applies weight)
-    data[,out.prob:=(lead.out/duration)*weight] #sets prob. mass to be assigned to the lead-out bin (then applies weight)
-    
-    #Cycle through data assigning probs to bins (this is the slow bit)
-    aoristic.sum <- numeric(((end.date-start.date)/bin.width)) #sets up empty output variable of correct length
-    for(i in 1:nrow(data)) { #First assigns lead-in & lead-out probs to relevant bins
-        aoristic.sum[data[i,first.full]-1] <- aoristic.sum[data[i,first.full]-1] + data[i,in.prob]
-        aoristic.sum[data[i,last.full]+1] <- aoristic.sum[data[i,last.full]+1] + data[i,out.prob]
-        if(data[i,diff] >= 0) { #Then for ranges spanning complete bins, assigns relevant probs to those bins 
-            for(j in data[i,first.full]:data[i,last.full]) {
-                aoristic.sum[j] <- aoristic.sum[j] + data[i,full.prob]
-            }
-        }
-        if(progress==TRUE & i/1000 == round(i/1000)) {print(paste(i/nrow(data)*100, "percent complete"))} #progress monitor
-    }
+
+    #Set up columns for duration and for weight per year
+    data[,duration:=End-Start]
+    data[,weight.per.unit:=weight/duration]
     
     #Set up breaks and labels
     breaks <<- seq(start.date, end.date, bin.width) #creates and saves vector of breaks
@@ -44,8 +20,20 @@ aorist <- function(data, start.date=0, end.date=2000, bin.width=100, weight=1, p
     }
     params <<- paste("_", start.date, "-", end.date, "_by_", bin.width, sep="") #saves character value with key parameters 
     
-    #Prepare and return results table
-    data.table(aorist=aoristic.sum[1:length(labels)], bin=labels, bin.no=1:length(labels)) #returns aoristic sum with labels appended
+    #Set frame for results
+    aorist <- data.table(bin=labels, bin.no=1:length(labels), aorist=0)
+    
+    #Cycle through bins and cases, assigning probability mass where appropriate
+    for(i in 1:((end.date-start.date)/bin.width)) {
+        bin.2 <- start.date + i*bin.width
+        bin.1 <- bin.2 - bin.width
+        data[Start>=bin.1 & Start<bin.2, assign("a", labels[i]):=(bin.2-Start)*weight.per.unit]
+        data[End>bin.1 & End<=bin.2, assign("a", labels[i]):=(End-bin.1)*weight.per.unit]
+        data[Start<bin.1 & End>bin.2, assign("a", labels[i]):=bin.width*weight.per.unit]
+        data[Start>=bin.1 & End<=bin.2, assign("a", labels[i]):=as.double(weight)]
+        aorist$aorist[i] <- sum(data[,get(labels[i])], na.rm=TRUE)
+    }
+    aorist
 }
 
 # Define function to simulate distribution of dates
@@ -146,7 +134,7 @@ dummy.simulate <- function(weight, probs=1, breaks=NULL, start.date=0, end.date=
 
 # Define function that performs both 'real' and dummy simulation on target bone data
 
-freq.simulate <- function(data, probs=1, weight=1, UoA=NULL, context.fields=c("SITE_C", "SITE_S"), quant.list=c(0.025,0.25,0.5,0.75,0.975), start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=TRUE, ...) {
+freq.simulate <- function(data, probs=1, weight=1, UoA=NULL, context.fields=c("SITE_S"), quant.list=c(0.025,0.25,0.5,0.75,0.975), start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=TRUE, ...) {
     #Load required packages
     require(data.table)
     require(reshape2)
@@ -158,6 +146,7 @@ freq.simulate <- function(data, probs=1, weight=1, UoA=NULL, context.fields=c("S
     #Aggregate data
     agg.list <- c(context.fields, "Start", "End", UoA)
     data <- data[, j=list(weight=sum(as.numeric(weight))), by=agg.list]
+    if(length(weight)==1) {data[,weight:=1]}
     
     #Reset bin.width based on probs, if necessary
     if(is.vector(probs)==TRUE & length(probs)>1) {bin.width <- (end.date-start.date)/length(probs)}  #if probs supplied, use to set bin.widths
@@ -193,7 +182,7 @@ sim.summ <- function(results, summ.col=NULL, quant.list=c(0.025,0.25,0.5,0.75,0.
     require(data.table)
     require(reshape2)
     
-    if(is.null(summ.col)==TRUE) {summ.col <- colnames(results)[4:ncol(results)]}
+    if(is.null(summ.col)==TRUE) {summ.col <- colnames(results)[!colnames(results)%in%c("rep.no", "bin", "bin.no")]}
     
     #Create summary tables
     for(i in 1:length(summ.col)) {    
@@ -247,7 +236,7 @@ comp.simulate <- function(data, probs=1, weight=1, comp.values=NULL, comp.field=
 
 ##CPUE function
 
-cpue <- function(x, y, weight.x=1, weight.y=1, context.fields=c("SITE_C"), start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=TRUE, ...) {
+cpue <- function(x, y, weight.x=1, weight.y=1, context.fields=c("SITE_C"), quant.list=c(0.025,0.25,0.5,0.75,0.975), start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=TRUE, ...) {
     #Load required package
     require(data.table)
     
@@ -260,6 +249,8 @@ cpue <- function(x, y, weight.x=1, weight.y=1, context.fields=c("SITE_C"), start
     #Aggregate data
     x <- x[, j=list(weight.x=sum(as.numeric(weight.x))), by=c(context.fields, "Start", "End")]
     y <- y[, j=list(weight.y=sum(as.numeric(weight.y))), by=c(context.fields, "Start", "End")]
+    if(length(weight.x)==1) {x[,weight.x:=1]}
+    if(length(weight.y)==1) {y[,weight.y:=1]}
     data <- merge(x,y,by=c(context.fields, "Start", "End"), all=TRUE)
     
     #Set up breaks and labels
@@ -282,6 +273,8 @@ cpue <- function(x, y, weight.x=1, weight.y=1, context.fields=c("SITE_C"), start
     results <- merge(frame, x=x, by=c("rep.no", "bin"), all=TRUE)
     results <- merge(results, y=y, by=c("rep.no", "bin"), all=TRUE)
     results[,cpue:=x/y]
+    results[,x:=NULL]
+    results[,y:=NULL]
     results[is.na(results)] <- 0
     
     #Calculate rates of change, if necessary
@@ -292,7 +285,7 @@ cpue <- function(x, y, weight.x=1, weight.y=1, context.fields=c("SITE_C"), start
     
     #Create summary dataset if required
     if(summ==TRUE) {
-        summary <- sim.summ(results)
+        summary <- sim.summ(results, quant.list=quant.list)
         results <- list(results, summary)
     }
     
