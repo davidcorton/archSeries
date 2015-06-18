@@ -309,11 +309,11 @@ surv.convert <- function(results, field.list=NULL, summ=TRUE) {
     
     #Calculate survivorship for each column, run, and bin (nested in that order)
     for(k in 1:length(field.list)) {
-        n <- results[rep.no==1, sum(get(field.list[k]))] #Find total sample size for current column
+        n <- results[rep.no==1&!is.na(get(field.list[k])), sum(get(field.list[k]))] #Find total sample size for current column
         frame[bin.no==1,assign("a", column.names[k]):=n] #Create column and fill in start value for each run
         frame[!bin.no==1, assign("a", column.names[k]):=results[,get(field.list[k])]]    
         for(i in 1:max(frame$rep.no)) {
-            frame[rep.no==i,assign("a", column.names[k]):=results[rep.no==i, n-diffinv(migratory.count)]]
+            frame[rep.no==i,assign("a", column.names[k]):=results[rep.no==i, n-diffinv(get(field.list[k]))]]
         }
         frame[,assign("a", column.names[k]):=get(column.names[k])/n]
     }
