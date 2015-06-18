@@ -23,11 +23,11 @@ aorist <- function(data, start.date=0, end.date=2000, bin.width=100, weight=1) {
     #Set frame for results
     aorist <- data.table(bin=labels, bin.no=1:length(labels), aorist=0)
     
-    #Cycle through bins and cases, assigning probability mass where appropriate
+    #Cycle through bins, assigning probability mass to cases where appropriate
     for(i in 1:((end.date-start.date)/bin.width)) {
-        bin.2 <- start.date + i*bin.width
-        bin.1 <- bin.2 - bin.width
-        data[Start>=bin.1 & Start<bin.2, assign("a", labels[i]):=(bin.2-Start)*weight.per.unit]
+        bin.2 <- start.date + i*bin.width #Find end date of bin
+        bin.1 <- bin.2 - bin.width #Find start date of bin
+        data[Start>=bin.1 & Start<bin.2, assign("a", labels[i]):=(bin.2-Start)*weight.per.unit] #
         data[End>bin.1 & End<=bin.2, assign("a", labels[i]):=(End-bin.1)*weight.per.unit]
         data[Start<bin.1 & End>bin.2, assign("a", labels[i]):=bin.width*weight.per.unit]
         data[Start>=bin.1 & End<=bin.2, assign("a", labels[i]):=as.double(weight)]
@@ -301,7 +301,7 @@ surv.convert <- function(results, field.list=NULL, summ=TRUE) {
     
     #Select only full results (if applicable); establish field names to use
     if(class(results)[1]=="list") {results <- results[[1]]}
-    if(is.null(field.list)==TRUE) {field.list <- colnames(results)[4:ncol(results)]}
+    if(is.null(field.list)==TRUE) {field.list <- colnames(results)[!colnames(results)%in%c("bin","bin.no", "rep.no")]}
     
     #Build new data table for results
     frame <- data.table(rep.no=rep(1:max(results$rep.no), each=(max(results$bin.no)+1)), bin.no=rep(1:(max(results$bin.no)+1)), bin=rep(c("Start", unique(as.character(results$bin))), max(results$rep.no)))
@@ -309,16 +309,15 @@ surv.convert <- function(results, field.list=NULL, summ=TRUE) {
     
     #Calculate survivorship for each column, run, and bin (nested in that order)
     for(k in 1:length(field.list)) {
-        frame[,assign("a", column.names[k]):=0]
-        frame[bin.no==1, column.names[k]:=1]
+        n <- results[rep.no==1, sum(get(field.list[k]))] #Find total sample size for current column
+        frame[bin.no==1,assign("a", column.names[k]):=n] #Create column and fill in start value for each run
+        frame[!bin.no==1, assign("a", column.names[k]):=results[,get(field.list[k])]]    
         for(i in 1:max(frame$rep.no)) {
-            for(j in 2:max(results$bin.no)) {
-                frame[rep.no==i&bin.no==j, assign("a", column.names[k]):=frame[rep.no==i&bin.no==j-1, get(column.names[k])]
-                      - (results[rep.no==i&bin.no==j-1, get(field.list[k])] / results[rep.no==1, sum(get(field.list[k]))])]
-            }
+            frame[rep.no==i,assign("a", column.names[k]):=results[rep.no==i, n-diffinv(migratory.count)]]
         }
+        frame[,assign("a", column.names[k]):=get(column.names[k])/n]
     }
-
+    
     #Create summary dataset if required
     if(summ==TRUE) {
         summary <- sim.summ(frame)

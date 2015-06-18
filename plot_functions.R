@@ -2,7 +2,7 @@
 
 axis.setup <- function(results, field.list=NULL, value.field="V1", lab.sp=1, main="", ylab="Estimated frequency density", type="full") {
     if(class(results)[1]=="list") {results <- results[[1]]}
-    if(is.null(field.list)==TRUE) {field.list <- colnames(results)[4:ncol(results)]}
+    if(is.null(field.list)==TRUE) {field.list <- colnames(results)[!colnames(results)%in%c("bin","bin.no", "rep.no")]}
     minmaxer <- numeric(0)
     if(type=="full") {
         for(i in 1:length(field.list)) {minmaxer <- c(minmaxer, results[,get(field.list[i])])}
@@ -20,9 +20,9 @@ axis.setup <- function(results, field.list=NULL, value.field="V1", lab.sp=1, mai
 
 lines.chron <- function(results, field.list=NULL, col.list=c("darkred", "darkgreen", "blue", "grey", "goldenrod"), opacity=20, lab.sp=1, main="", ylab="Estimated frequency density", add=FALSE, legend=TRUE) {
     if(class(results)[1]=="list") {results <- results[[1]]}
-    if(is.null(field.list)==TRUE) {field.list <- colnames(results)[4:ncol(results)]}
+    if(is.null(field.list)==TRUE) {field.list <- colnames(results)[!colnames(results)%in%c("bin","bin.no", "rep.no")]}
     if(add==FALSE) {axis.setup(results, field.list=field.list, lab.sp=lab.sp, main=main, ylab=ylab)}
-    plist <- data.frame(field.list, col.list, opacity)[1:length(field.list),]
+    plist <- data.frame(field.list, col.list[1:length(field.list)], opacity)
     a <- col2rgb(plist[,2])
     b <- character()
     for(i in 1:nrow(plist)) {
@@ -42,7 +42,7 @@ poly.chron <- function(results, field.list=NULL, quant=c(0.025, 0.975), col.list
     if(class(results)[1]=="list") {results <- results[[2]]}
     if(is.null(field.list)==TRUE) {field.list <- unique(results$id)}
     if(add==FALSE) {axis.setup(results, field.list=field.list, lab.sp=lab.sp, main=main, ylab=ylab, value.field=value.field, type="summary")}
-    plist <- data.frame(field.list, col.list, opacity)[1:length(field.list),]
+    plist <- data.frame(field.list, col.list[1:length(field.list)], opacity)
     a <- col2rgb(plist[,2])
     b <- character()
     for(i in 1:nrow(plist)) {
@@ -63,7 +63,7 @@ poly.chron <- function(results, field.list=NULL, quant=c(0.025, 0.975), col.list
 
 box.chron <- function(results, field.list=NULL, col.list=c("darkred", "darkgreen", "blue", "grey"), opacity=255, lab.sp=1, main="", ylab="Estimated frequency density", add=FALSE) {
     if(class(results)[1]=="list") {results <- results[[1]]}
-    if(is.null(field.list)==TRUE) {field.list <- colnames(results)[4:ncol(results)]}
+    if(is.null(field.list)==TRUE) {field.list <- colnames(results)[!colnames(results)%in%c("bin","bin.no", "rep.no")]}
     if(add==FALSE) {axis.setup(results, field.list=field.list, lab.sp=lab.sp, main=main, ylab=ylab)}
     plist <- data.frame(field.list, col.list, opacity)[1:length(field.list),]
     a <- col2rgb(plist[,2])
