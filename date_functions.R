@@ -38,7 +38,8 @@ aorist <- function(data, start.date=0, end.date=2000, bin.width=100, weight=1) {
 
 # Define function to simulate distribution of dates
 
-date.simulate <- function(data, weight=1, UoA=NULL, context.fields=c("SITE_C", "SITE_S"), start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=TRUE, ...) {
+date.simulate <- function(data, weight=1, UoA=NULL, context.fields=c("SITE_C", "SITE_S"), start.date=0, end.date=2000, bin.width=100,
+                          reps=100, RoC=FALSE, ...) {
     #Load required package
     require(data.table) 
     
@@ -76,19 +77,14 @@ date.simulate <- function(data, weight=1, UoA=NULL, context.fields=c("SITE_C", "
         results[bin==labels[length(labels)], RoC:=NA]
     }
     
-    #Create summary dataset if required
-    if(summ==TRUE) {
-        summary <- sim.summ(results)
-        results <- list(results, summary)
-    }
-    
-    #Return results
-    results
+    #Create summary dataset and return results
+    summary <- sim.summ(results)
+    list(results, summary)
 }
 
 # Define function to simulate a dummy set by sampling from within a specified distribution
 
-dummy.simulate <- function(weight, probs=1, breaks=NULL, start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=TRUE, ...) {
+dummy.simulate <- function(weight, probs=1, breaks=NULL, start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, ...) {
     #Load required package
     require(data.table)
     
@@ -122,19 +118,15 @@ dummy.simulate <- function(weight, probs=1, breaks=NULL, start.date=0, end.date=
         results[bin==labels[length(labels)], RoC:=NA]
     }
     
-    #Create summary dataset if required
-    if(summ==TRUE) {
-        summary <- sim.summ(results)
-        results <- list(results, summary)
-    }
-    
-    #Return results
-    results
+    #Create summary dataset and return results
+    summary <- sim.summ(results)
+    list(results, summary)
 }
 
 # Define function that performs both 'real' and dummy simulation on target bone data
 
-freq.simulate <- function(data, probs=1, weight=1, UoA=NULL, context.fields=c("SITE_S"), quant.list=c(0.025,0.25,0.5,0.75,0.975), start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=TRUE, ...) {
+freq.simulate <- function(data, probs=1, weight=1, UoA=NULL, context.fields=c("SITE_S"), quant.list=c(0.025,0.25,0.5,0.75,0.975),
+                          start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, ...) {
     #Load required packages
     require(data.table)
     require(reshape2)
@@ -165,14 +157,9 @@ freq.simulate <- function(data, probs=1, weight=1, UoA=NULL, context.fields=c("S
         results[bin==unique(bin)[length(unique(bin))], RoC.dummy:=NA]
     }
            
-    #Create summary dataset if required
-    if(summ==TRUE) {
-        summary <- sim.summ(results)
-        results <- list(results, summary)
-    }
-    
-    #Return results
-    results
+    #Create summary dataset and return results
+    summary <- sim.summ(results)
+    list(results, summary)
 }
 
 #Define function to create summary table from results of data.simulate or dummy.simulate
@@ -180,8 +167,7 @@ freq.simulate <- function(data, probs=1, weight=1, UoA=NULL, context.fields=c("S
 sim.summ <- function(results, summ.col=NULL, quant.list=c(0.025,0.25,0.5,0.75,0.975)) {
     #Load required packages
     require(data.table)
-    require(reshape2)
-    
+
     if(is.null(summ.col)==TRUE) {summ.col <- colnames(results)[!colnames(results)%in%c("rep.no", "bin", "bin.no")]}
     
     #Create summary tables
@@ -198,7 +184,8 @@ sim.summ <- function(results, summ.col=NULL, quant.list=c(0.025,0.25,0.5,0.75,0.
 }
 
 #Function for comparisons
-comp.simulate <- function(data, probs=1, weight=1, comp.values=NULL, comp.field="group", context.fields=c("SITE_C", "SITE_S"), UoA=NULL, comp.fun=date.simulate, quant.list=c(0.025,0.25,0.5,0.75,0.975), start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=TRUE) {
+comp.simulate <- function(data, probs=1, weight=1, comp.values=NULL, comp.field="group", context.fields=c("SITE_C", "SITE_S"), UoA=NULL, 
+                    comp.fun=date.simulate, quant.list=c(0.025,0.25,0.5,0.75,0.975), start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE) {
     #Load required packages
     require(data.table)
         
@@ -224,19 +211,15 @@ comp.simulate <- function(data, probs=1, weight=1, comp.values=NULL, comp.field=
         results <- merge(results, y, by=c("rep.no", "bin.no", "bin"))
     }
     
-    #Create summary dataset if required
-    if(summ==TRUE) {
-        summary <- sim.summ(results)
-        results <- list(results, summary)
-    }
-    
-    #Return results
-    results
+    #Create summary dataset and return results
+    summary <- sim.summ(results)
+    list(results, summary)
 }
 
 ##CPUE function
 
-cpue <- function(x, y, weight.x=1, weight.y=1, context.fields=c("SITE_C"), quant.list=c(0.025,0.25,0.5,0.75,0.975), start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=TRUE, ...) {
+cpue <- function(x, y, weight.x=1, weight.y=1, context.fields=c("SITE_C"), UoA=NULL, quant.list=c(0.025,0.25,0.5,0.75,0.975), start.date=0,
+                 end.date=2000, bin.width=100, reps=100, RoC=FALSE, small.n=NULL, ...) {
     #Load required package
     require(data.table)
     
@@ -247,7 +230,7 @@ cpue <- function(x, y, weight.x=1, weight.y=1, context.fields=c("SITE_C"), quant
     y <- y[End >= start.date & Start <= end.date] #excludes ranges that fall entirely outside the study period
     
     #Aggregate data
-    x <- x[, j=list(weight.x=sum(as.numeric(weight.x))), by=c(context.fields, "Start", "End")]
+    x <- x[, j=list(weight.x=sum(as.numeric(weight.x))), by=c(context.fields, "Start", "End", UoA)]
     y <- y[, j=list(weight.y=sum(as.numeric(weight.y))), by=c(context.fields, "Start", "End")]
     if(length(weight.x)==1) {x[,weight.x:=1]}
     if(length(weight.y)==1) {y[,weight.y:=1]}
@@ -273,8 +256,6 @@ cpue <- function(x, y, weight.x=1, weight.y=1, context.fields=c("SITE_C"), quant
     results <- merge(frame, x=x, by=c("rep.no", "bin"), all=TRUE)
     results <- merge(results, y=y, by=c("rep.no", "bin"), all=TRUE)
     results[,cpue:=x/y]
-    results[,x:=NULL]
-    results[,y:=NULL]
     results[is.na(results)] <- 0
     
     #Calculate rates of change, if necessary
@@ -283,13 +264,27 @@ cpue <- function(x, y, weight.x=1, weight.y=1, context.fields=c("SITE_C"), quant
         results[bin==labels[length(labels)], RoC:=NA]
     }
     
-    #Create summary dataset if required
-    if(summ==TRUE) {
-        summary <- sim.summ(results, quant.list=quant.list)
-        results <- list(results, summary)
-    }
+    #Create summary dataset
+    summary <- sim.summ(results, summ.col="cpue", quant.list=quant.list)
     
+    #Define small-n polygons if required
+    if(length(small.n > 0)) {
+        n <- results[,median(y), by="bin"]
+        ylim <- max(results$cpue*1.1)
+        boxes <- list()
+        for(i in 1:length(small.n)) {
+            weak <- c(FALSE, n$V1 < small.n[i], FALSE)
+            weak.x <- rep((0:length(labels))[diff(weak)==1|diff(weak)==-1], each=2)+0.5
+            weak.y <- rep(c(-1,ylim, ylim, -1), length(weak.x)/4)
+            coords <- data.frame(cbind(weak.x, weak.y))
+            coords <- split(coords, rep(1:(nrow(coords)/4), each=4))
+            boxes[[i]] <- coords
+        }
+    }
+
     #Return results
+    results <- list(full=results, summary=summary)
+    if(length(small.n)>0) {results$small.n <- boxes}
     results
     
 }

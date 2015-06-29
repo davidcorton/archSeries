@@ -182,7 +182,8 @@ Plots a confidence band for each specified variable.
 
 ##Current issues to work on
 1. Replace comp.sim with extra arguments for date.sim and dummy.sim, that can be passed through freq.sim. In so doing, switch to a single-simulation approach, as for cpue.
-2. Rewrite RoC routines using diff() to make them faster.
+2. Add ability to pass a function to comp.simulate (or a whole new function?)
+3. build "small n" polygons into plotting functions
 4. Update freq.simulate and comp.simulate to simulate context date ranges only once (see 1)
-5. make plotting function compatible with aorist
+5, argument to limit ylim??
 6. New function(s) to generate model distributions to feed into dummy.simulate?
