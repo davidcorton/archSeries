@@ -8,47 +8,69 @@
 * James Morris, School of Forensic and Investigative Sciences, University of Central Lancashire
 
 ###Overview
-This project aims to develop tools for constructing and comparing frequency time series from archaeological data. In particular, we're looking at ways of synthesising ecofactual data from multiple sites and contexts with varying dates and dating precision, using both aoristic and simulation-based approaches (inspired to a great extent by Crema 2012). More experimentally, we're also developing functions for calibrating ecofactual data against time series of research intensity, e.g. based on volumes of processed environmental samples or numbers of excavated contexts.
+This project aims to develop tools for constructing and comparing frequency time series from archaeological data. In particular, we're looking at ways of synthesising ecofactual data from multiple sites and contexts with varying dates and dating precision, using both aoristic and simulation-based approaches (inspired to a great extent by Crema 2012). More experimentally, we're also developing functions for calibrating ecofactual data against time series of research effort, e.g. based on volumes of processed environmental samples or numbers of excavated contexts.
 
-The files in this repo are designed for use on a pilot dataset of contexts, environmental samples, and zooarchaeological finds supplied by MOLA, one of London's largest archaeological contractors. The data themselves are not included here for obvious reasons).
+The files in this repo are designed for use on a pilot dataset of contexts, environmental samples, and zooarchaeological finds supplied by MOLA, one of London's largest archaeological contractors. The data themselves are not included here for obvious reasons.
 
 This is an ongoing project, so this README is intended primarily as a place to update progress and discuss problems. Ultimately, we intend to turn the functions in **date_functions.R** into an R package.
 
 ###Main files
 1. **date_functions.R** - source file containing the functions under development.
-2. **London_analysis.R** - script demonstrating the use of some of these functions to assess variations in research intensity over the course of London's 2000-year existence.
-3. **fresh_vs_marine.R** - script expoloratory analysis revisiting (for London) the 'Fish Event Horizon' (FEH) phenomenon, which saw a sudden shift towards marine fish consumption in medieval England at around AD1000 (Barrett et al. 2004).
-4. **CPUE_code.R** - code for a forthcoming paper exploring the FEH in London **WORK IN PROGRESS**.
-5. **London_prep.R** - script for cleaning and formatting the datasets as supplied by the archaeological contractor. Obviously this is specific to our dataset and unlikely to be of general use.
+2. **plot_functions.R** - source file containing several plottin functions designed to work with the output of the above
 
 ##Required packages
 
 * data.table
-* reshape2
 
 ###Analysis functions
-The core functions so far are `aorist` and `date.simulate`, which each estimate a chronological distribution from a data table of entities with date ranges, but using two very different approaches. `dummy.simulate` is used to simulate idealised chronological distributions against which empirical results can be compared. `freq.simulate` is a wrapper function that calls both `date.simulate` and `dummy.simulate` on the same data. `comp.simulate` uses a factor variable to compare the results of any of the above simulation functions between subsets of a dataset.
+The core functions so far are `aorist` and `date.simulate`, which each estimate a chronological distribution from a data table of entities with date ranges, but using two rather different approaches. `dummy.simulate` is used to simulate idealised chronological distributions based on a null model, against which empirical results can be compared. `freq.simulate` is a wrapper function that calls both `date.simulate` and `dummy.simulate` on the same data. `comp.simulate` uses a factor variable to compare the results of any of the above simulation functions between subsets of a dataset. `cpue` 
 
 ###1. aorist
-Calculates the aoristic sum (*sensu* Crema 2012) from given date ranges for a set of entities, for example representing discrete archaeological contexts or samples. Optionally, these can be weighted, e.g. representing the number of items within a context or the volume of a soil sample. The function uses the data.table package for speed, but is nonetheless quite computationally intensive as we weren't able to vectorise all of the calculations.
+Calculates the aoristic sum (*sensu* Crema 2012) from given date ranges for a set of entities, for example representing discrete archaeological contexts or samples. Optionally, these can be weighted, e.g. representing the number of items within a context or the volume of a soil sample. The function uses the data.table package for speed, but is nonetheless quite computationally intensive.
 
 **Arguments:**
 
-* `data` is a data table with (at least) two numeric columns called Start and End.
-* `start.date` is a single numeric value for the start of the time period to be analysed (defaults to 0).
-* `end.date` is a single numeric value for the end end of the time period to be analysed (defaults to 2000).
-* `bin.width` is a single numeric value setting the resolution of the analysis, in years (defaults to 100).
-* `weight` is a numeric vector giving a weight for each context/entity (defaults to a constant of 1).
-* `progress` is a logical value specifying whether a progress report should be made (defaults to TRUE)
+* `data`: data table with (minimally) two numeric columns called Start and End.
+* `start.date`: numeric vector of length 1. The start of the time period to be analysed (defaults to 0).
+* `end.date`: numeric vector of length 1. The end end of the time period to be analysed (defaults to 2000).
+* `bin.width`: numeric vector of length 1. The resolution of the analysis, in years (defaults to 100).
+* `weight`: numeric vector. The weight to be applied to each row in `data`, or a constant weight to be applied to all (defaults to a constant of 1).
 
 **Returns:**
-A two-column data table with the aoristic sum itself (numeric) and bin labels (character). The number of rows in this data table will be `(end.date-start.date)/bin.width`.
+A two-column data table with the aoristic sum itself ("aorist", numeric) and bin labels ("bin", character). The number of rows in this data table is equivalent to `(end.date-start.date)/bin.width`.
 
 **Also outputs (->>):**
 `breaks`: a numeric vector of breaks points.
 `params`: a character value summarising the arguments, for use in naming output files.
 
-###2. comp.simulate
+###2. date.simulate
+Applies a simulation approach to estimate chronological distribution from given date ranges for a set of entities, for example representing discrete archaeological contexts or samples (this is again based on the procedure described by Crema 2012 and has advantages over `aorist` as set out in that paper). Optionally, the entities can be weighted, e.g. representing the number of items within a context or the volume of a soil sample.
+
+The function simulates a date (year) for each entity, assuming a uniform distribution within the limits of its date range, and places the results into chronological bins of a specified resultion. This process is repeated a specified number of times, allowing the number of points falling into each chronological bin to be estimated, with confidence intervals. Weights are applied **after** sampling, such that heavily weighted entities will tend to increase confidence intervals within their date ranges (this will typically be an appropriately conservative approach in an archaeological scenario).
+
+In future this function may be expanded to permit distributions other than uniform, although it is more likely these will end up as separate functions.
+
+**Arguments:**
+
+* `data`: data table with (minimally) two numeric columns called Start and End.
+* `weight`: numeric vector. The weight to be applied to each row in `data`, or a constant weight to be applied to all (defaults to a constant of 1).
+* `UoA`: optional character vector - Unit of Analysis. Additional column(s) by which to group data when aggregating weights, on top of those specified in context.field. For example, should different taxa be lumped together when analysing bone remains? Defaults to NULL.
+* `context.fields`: character vector. The column(s) in data which define the minimal stratigraphic entities to analyse (defaults to "SITE_C").
+* `start.date`: numeric vector of length 1. The start of the time period to be analysed (defaults to 0).
+* `end.date`: numeric vector of length 1. The end end of the time period to be analysed (defaults to 2000).
+* `bin.width`: numeric vector of length 1. The resolution of the analysis, in years (defaults to 100).
+* `reps`: integer of length 1. The number of times the simulation will be run (defaults to 100).
+* `RoC`: logical. Should rates-of-change should be calculated and appended to the output? Defaults to FALSE.
+* `summ`: logical. Should a summary table be created and appended to the results (in which case the function will return list of length 2)? Defaults to TRUE - no real reason to change, except when `date.simulate` is called as part of a more complex function. Nb. the quantiles to use when summarising can be specified using a numeric vector called `quant.list`, which will be passed straight to the summarising function (`sim.summ`; see below) and defaults to c(0.025,0.25,0.5,0.75,0.975).
+
+**Returns:**
+Minimally, a long-format data table giving the sum of weight for each bin in each repeat. If summ=TRUE, a list with two elements: "full" is as above; "summary" is a second long format data table giving a set of quantiles for each bin. 
+
+**Also outputs (->>):**
+`breaks`: a numeric vector of breaks points.
+`params`: a character value summarising the arguments, for use in naming output files.
+
+###5. comp.simulate
 Applies `date.simulate`, `dummy.simulate`, or `freq.simulate` to multiple subsets of a data table, combining the results into a single results table (and, optionally, a single summary results table).
 
 **Arguments**
@@ -73,33 +95,6 @@ Nb. most of these are simply passed to the specified simulation function, so may
 **Returns:**
 A data table giving the sum of weight for each group, for each bin in each repeat, for both the 'real' and 'dummy' simulations (plus columns for rates of change, if RoC==TRUE).
 If `summ`=TRUE, a list containing the above and a second data table giving the specified quantiles of the full simulation results for each bin, again for both the 'real' and 'dummy' simulations (and for rates of change, if RoC=TRUE).
-
-###3. date.simulate
-Applies a simulation approach to estimate chronological distribution from given date ranges for a set of entities, for example representing discrete archaeological contexts or samples (this is again based on the procedure described by Crema (2011) and has advantages over `aorist` as set out in that paper). Optionally, the entities can be weighted, e.g. representing the number of items within a context or the volume of a soil sample.
-
-The function simulates a date (year) for each entity, assuming a uniform distribution within the limits of its date range, and places the results into chronological bins of a specified resultion. This process is repeated a specified number of times, allowing the number of points falling into each chronological bin to be estimated, with confidence intervals. Weights are applied **after** sampling, such that heavily weighted entities will tend to increase confidence intervals within their date ranges (this will typically be an appropriately conservative approach in an archaeological scenario).
-
-In future this function may be expanded to permit distributions other than uniform, although it is more likely these will end up as separate functions.
-
-**Arguments:**
-
-
-* `data` is a data table with (at least) two numeric columns called Start and End. If additional factor columns are provided, these can be used to filter the data using the `filter.field` and `filter.values` arguments, below.
-* `weight` is a numeric vector giving a weight for each context/entity (defaults to a constant of 1).
-* `filter` is a character vector indicating which rows should be included in analysis (defaults to NULL). It will be ignored if no "group" column is provided in 'data'.
-* `start.date` is a single numeric value for the start of the time period to be analysed (defaults to 0).
-* `end.date` is a single numeric value for the end end of the time period to be analysed (defaults to 2000).
-* `bin.width` is a single numeric value setting the resolution of the analysis, in years (defaults to 100).
-* `reps` is the number of times the simulation will be run (defaults to 100).
-
-* `RoC` is a logical value indicating whether rates-of-change should be calculated and appended to the output (defaults to FALSE). Nb. setting to TRUE will make the function much slower.
-
-**Returns:**
-A long-format data table giving the sum of weight for each bin in each repeat.
-
-**Also outputs (->>):**
-`breaks`: a numeric vector of breaks points.
-`params`: a character value summarising the arguments, for use in naming output files.
 
 ###4. dummy.simulate
 Simulates a 'dummy' chronological distribution within specified date limits by sampling from within a distribution defined by an input vector. Designed for use with date.simulate, particularly within wrapper functions like freq.simulate. The idea here is to simulate chronological distributions based on the same number of entities (with the same weights) as a date.simulate call, but unconstrained by the known date ranges.

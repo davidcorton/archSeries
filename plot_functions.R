@@ -22,8 +22,9 @@ axis.setup <- function(results, field.list=NULL, value.field="V1", lab.sp=1, mai
 
 lines.chron <- function(results, field.list=NULL, col.list=c("darkred", "darkgreen", "blue", "grey", "goldenrod"), opacity=20, lab.sp=1,
                         main="", ylab="Estimated frequency density", ylim=NULL, small.n=NULL, small.n.op=126, add=FALSE, legend=TRUE) {
+    boxes <- NULL
     if(class(results)[1]=="list") {
-        if(length(results)==3) {boxes <- results$small.n} else {boxes <- NULL}
+        if(length(results)==3) {boxes <- results$small.n}
         results <- results[[1]]
     }
     if(is.null(field.list)==TRUE) {field.list <- colnames(results)[!colnames(results)%in%c("bin","bin.no", "rep.no","x","y")]}
@@ -48,8 +49,9 @@ lines.chron <- function(results, field.list=NULL, col.list=c("darkred", "darkgre
 poly.chron <- function(results, field.list=NULL, quant=c(0.025, 0.975), col.list=c("darkred", "darkgreen", "blue", "grey", "goldenrod"),
                        opacity=126, value.field="V1", lab.sp=1, main="", ylab="Estimated frequency density", med.line=TRUE, ylim=NULL, 
                        small.n=NULL, small.n.op=126, add=FALSE, legend=TRUE) {
+    boxes <- NULL
     if(class(results)[1]=="list") {
-        if(length(results)==3) {boxes <- results$small.n} else {boxes <- NULL}
+        if(length(results)==3) {boxes <- results$small.n}
         results <- results[[2]]
     }
     if(is.null(field.list)==TRUE) {field.list <- unique(results$id)}
@@ -79,8 +81,9 @@ poly.chron <- function(results, field.list=NULL, quant=c(0.025, 0.975), col.list
 
 box.chron <- function(results, field.list=NULL, col.list=c("darkred", "darkgreen", "blue", "grey"), opacity=255, lab.sp=1, main="",
                      ylab="Estimated frequency density", ylim=NULL, small.n=NULL, small.n.op=126, add=FALSE) {
+    boxes <- NULL
     if(class(results)[1]=="list") {
-        if(length(results)==3) {boxes <- results$small.n} else {boxes <- NULL}
+        if(length(results)==3) {boxes <- results$small.n}
         results <- results[[1]]
     }
     if(is.null(field.list)==TRUE) {field.list <- colnames(results)[!colnames(results)%in%c("bin","bin.no", "rep.no","x","y")]}
@@ -97,10 +100,17 @@ box.chron <- function(results, field.list=NULL, col.list=c("darkred", "darkgreen
     }
 }
 
-#Function for plotting aorist output
+#Function for plotting aorist output (this is really just barplot with some tweaks
+#added, e.g. to make bars line up with points plotted by other functions)
 
-aorist.plot <- function(aorist, ) {
-    
+aorist.plot <- function(aorist, col="grey", opacity=255, lab.sp=1, add=FALSE) {
+    col <- col2rgb(col)
+    col <- rgb(col[1,], col[2,], col[3,], opacity, maxColorValue=255)
+    with(aorist, barplot(aorist, space=c(0.5,rep(0, length(bin)-1)), col=col, add=add))
+    if(add==FALSE) {
+        ticks <- seq(1, nrow(aorist),by=lab.sp)
+        axis(1, at=ticks, labels=aorist$bin[ticks], las=2)
+    }
 }
 
 #Function to plot small-n polygons as output by cpue

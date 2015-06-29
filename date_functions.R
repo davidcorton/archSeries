@@ -38,8 +38,8 @@ aorist <- function(data, start.date=0, end.date=2000, bin.width=100, weight=1) {
 
 # Define function to simulate distribution of dates
 
-date.simulate <- function(data, weight=1, UoA=NULL, context.fields=c("SITE_C", "SITE_S"), start.date=0, end.date=2000, bin.width=100,
-                          reps=100, RoC=FALSE, ...) {
+date.simulate <- function(data, weight=1, UoA=NULL, context.fields=c("SITE_C"), start.date=0, end.date=2000, bin.width=100,
+                          reps=100, RoC=FALSE, summ=TRUE, ...) {
     #Load required package
     require(data.table) 
     
@@ -77,14 +77,17 @@ date.simulate <- function(data, weight=1, UoA=NULL, context.fields=c("SITE_C", "
         results[bin==labels[length(labels)], RoC:=NA]
     }
     
-    #Create summary dataset and return results
-    summary <- sim.summ(results)
-    list(results, summary)
+    #Create summary dataset if required, and return results
+    if(summ==TRUE) {
+        summary <- sim.summ(results)
+        results <- list(results, summary)
+    }
+    results
 }
 
 # Define function to simulate a dummy set by sampling from within a specified distribution
 
-dummy.simulate <- function(weight, probs=1, breaks=NULL, start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, ...) {
+dummy.simulate <- function(weight, probs=1, breaks=NULL, start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, summ=TRUE, ...) {
     #Load required package
     require(data.table)
     
@@ -118,19 +121,21 @@ dummy.simulate <- function(weight, probs=1, breaks=NULL, start.date=0, end.date=
         results[bin==labels[length(labels)], RoC:=NA]
     }
     
-    #Create summary dataset and return results
-    summary <- sim.summ(results)
-    list(results, summary)
+    #Create summary dataset if required, and return results
+    if(summ==TRUE) {
+        summary <- sim.summ(results)
+        results <- list(results, summary)
+    }
+    results
 }
 
 # Define function that performs both 'real' and dummy simulation on target bone data
 
-freq.simulate <- function(data, probs=1, weight=1, UoA=NULL, context.fields=c("SITE_S"), quant.list=c(0.025,0.25,0.5,0.75,0.975),
+freq.simulate <- function(data, probs=1, weight=1, UoA=NULL, context.fields=c("SITE_C"), quant.list=c(0.025,0.25,0.5,0.75,0.975),
                           start.date=0, end.date=2000, bin.width=100, reps=100, RoC=FALSE, ...) {
     #Load required packages
     require(data.table)
-    require(reshape2)
-    
+
     #Tidy up input data; apply filters
     data <- data.table(cbind(data, weight)) #appends weights to list of date ranges, recycling if necessary (e.g. for uniform weight) 
     data <- data[End >= start.date & Start <= end.date]  #drops records outside the date range FROM BOTH SIMULATION SETS
