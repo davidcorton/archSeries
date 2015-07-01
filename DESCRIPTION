@@ -9,3 +9,5 @@ Depends: R (>= 3.2.0)
 Imports: data.table (>= 1.9.4)
 License: GPL-3
 LazyData: true
+Suggests: knitr
+VignetteBuilder: knitr
