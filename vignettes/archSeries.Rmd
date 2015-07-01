@@ -1,0 +1,87 @@
+---
+title: "Introduction to archSeries"
+author: "David C. Orton"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Intro to archSeries}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+## Overview
+
+This package provides a series of functions designed for dealing with **archaeological data
+
+** 
+
+The functions fall into two groups:
+
+* **Analysis functions:** take data and produce one or more chronological frequency distributions, potentially including confidence intervals, dummy sets under null models, etc.
+* **Plotting functions:** take the output of the analysis functions and plot them in various ways, using R base graphics.
+
+So far
+
+## Analysis functions
+
+With the exception of *aorist*, the analysis functions all produce output in a standard format: a list of two data tables, the first ("full") containing full simulation results and the second ("summary") containing a summary table of quantiles based on the first. In the case of *cpue*, certain arguments can result in the addition of a third component ("small.n"): a list of lists defining areas of low confidence. This standard output format could be thought of as a special type of object, though it is not (yet?) formally defined as such. In any case, the main plotting functions are designed to work directly with it.
+
+### aorist: calculate the aoristic sum for a chronological dataset
+
+### date.simulate: 
+
+### dummy.simulate:
+
+### freq.simulate:
+
+### comp.simulate:
+
+### cpue: "Catch per Unit Effort""
+
+### surv.convert
+This is the only function so far developed with a view specifically to mortality profiles rather than chronological data (i.e. ages in months or years rather than dates in decades or centuries). It take the output from any of the simulate functions and converts the simulated frequencies into simulated survivorship curves, which are output in the standard format.
+
+## Plotting functions
+There are four main plotting functions in the package: *poly.chron*, *lines.chron*, *box.chron*, and *aorist.plot*. The first three are designed to work with the output of the various simulation functions, and the fourth with output from *aorist*. In addition, two auxiliaries functions called within the above -- *axis.setup* and *grey.zones* -- can also be called on their own if required.
+
+### poly.chron:
+
+### lines.chron: 
+
+### box.chron: 
+
+### aorist.plot:
+
+### axis.setup:
+
+### grey.zones:
+
+## References
+
+## To do list:
+
+## Figures
+
+The figure sizes have been customised so that you can easily put two images side-by-side. 
+
+```{r, fig.show='hold'}
+plot(1:10)
+plot(10:1)
+```
+
+You can enable figure captions by `fig_caption: yes` in YAML:
+
+    output:
+      rmarkdown::html_vignette:
+        fig_caption: yes
+
+Then you can use the chunk option `fig.cap = "Your figure caption."` in **knitr**.
+
+## More Examples
+
+You can write math expressions, e.g. $Y = X\beta + \epsilon$, footnotes^[A footnote here.], and tables, e.g. using `knitr::kable()`.
+
+```{r, echo=FALSE, results='asis'}
+knitr::kable(head(mtcars, 10))
+```
+
