@@ -51,8 +51,7 @@ date.simulate <- function(data, weight=1, context.fields=c("SITE_C"), UoA=NULL, 
     for(i in 1:(length(breaks) - 1)) {
         labels[i] <- paste(breaks[i], breaks[i + 1], sep="-") #sets bin labels
     }
-    params <<- paste("_", start.date, "-", end.date, "_by_", bin.width, "_x", reps, sep="") #saves char value with key parameters 
-    
+
     #Perform simulation
     rep.no <- rep(1:reps, each = nrow(data))
     data <- cbind(rep.no, data) #recycles input data 'reps' times to provide frame for simulation 
