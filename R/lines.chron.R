@@ -21,7 +21,7 @@
 #' @param ... Other graphical arguments to be passed to plot. Nb. (a) includes special arguments for axis.setup (currently just 'lab.sp'), 
 #'      (b) 'ylab' will default to "Estimated frequency density", as per axis.setup, unless specified here.
 #' @return None.
-#' @export
+#' @export lines.chron
 #' @examples
 #' date.ranges <- data.table(unit=c(1, 2, 3, 4), Start=c(450, 450, 600, 1000), End=c(700, 800, 650, 1200), frags=c(3, 6, 25, 1))
 #' x <- freq.simulate(date.ranges, weight=date.ranges$frags, context.fields="unit", bin.width=50, reps=200, summ=FALSE)
