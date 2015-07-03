@@ -1,6 +1,6 @@
 #' Plot medians and confidence polygons for simulation results.
 #' 
-#' Plots defined confidence intervals (as polygons) and medians (as lines) for output from date.simulate or anb associated function.
+#' Plots defined confidence intervals (as polygons) and medians (as lines) for output from date.simulate or an associated function.
 #' @param results A list resembling the output from date.simulate or a related function, or a data table resembling the second component 
 #'      thereof - i.e. the summary simulation results.
 #' @param field.list A character vector of values in results$id to be plotted. Defaults to NULL, in which case all suitable 

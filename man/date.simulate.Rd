@@ -2,24 +2,38 @@
 % Please edit documentation in R/date.simulate.R
 \name{date.simulate}
 \alias{date.simulate}
-\title{Simulate chronological frequency distribution.}
+\title{Simulate date distributions.}
 \usage{
-date.simulate(data, weight = 1, context.fields = c("SITE_C"), UoA = NULL,
-  start.date = 0, end.date = 2000, bin.width = 100, reps = 100,
-  RoC = FALSE, summ = TRUE, ...)
+date.simulate(data, probs = 1, weight = 1, real = TRUE, dummy = FALSE,
+  comp.field = NULL, comp.values = NULL, context.fields = c("SITE_C"),
+  quant.list = c(0.025, 0.25, 0.5, 0.75, 0.975), start.date = 0,
+  end.date = 2000, bin.width = 100, reps = 100, RoC = NULL,
+  summ = FALSE)
 }
 \arguments{
 \item{data}{Data table (or object that can be coerced to one) with, minimally, two numeric columns called Start and End.}
 
-\item{weight}{Numeric vector: the weight to be applied to each row in `data`, or a constant weight to be applied to all.
+\item{probs}{Numeric vector defining a null model from which to sample the dummy set. Will be recycled up to nrow(data), so passing a
+single value results in a uniform null model. If length > 1 then probs is used to set number of bins, overriding bin.width.
 Defaults to 1.}
 
-\item{context.fields}{Character vector specifying the column(s) in data which define the minimal stratigraphic entities to analyse.
-Defaults to "SITE_C".}
+\item{weight}{Numeric vector: the weight to be applied to each row in `data` (and to its counterpart in the dummy set), or a constant
+weight to be applied to all. Defaults to 1.}
 
-\item{UoA}{Unit of Analysis: character vector of names of additional columns by which to group data when aggregating weights,
-on top of those specified in context.field. For example, should different taxa be lumped together when analysing bone remains
-from a table of contexts? Defaults to NULL.}
+\item{real}{Logical: should the date distribution of the empirical data be simulated? Defaults to TRUE.}
+
+\item{dummy}{Logical: should a dummy set be simulated in addition to the empirical data? Defaults to FALSE.}
+
+\item{comp.field}{Character: optional name of column to be used to subset 'data'. Defaults to NULL.}
+
+\item{comp.values}{Optional vector specifying values of 'comp.field' to compare. Defaults to NULL, in which case all
+unique values (exlcuding blanks and NAs) are compared if comp.field is not NULL.}
+
+\item{context.fields}{Character vector specifying the column(s) in data which define the minimal stratigraphic entities to analyse.
+Add more column names if you want to group the data by additional criteria prior to simulations - For example, should different
+taxa be treated separately rather than lumped together when analysing bone remains from a table of contexts? Defaults to "SITE_C".}
+
+\item{quant.list}{Numeric vector of quantiles to be calculated in a summary table. Defaults to c(0.025,0.25,0.5,0.75,0.975).}
 
 \item{start.date}{Numeric: the start of time period to be considered. Defaults to 0.}
 
@@ -29,29 +43,29 @@ from a table of contexts? Defaults to NULL.}
 
 \item{reps}{Integer: the number of times the simulation will be run. Defaults to 100.}
 
-\item{RoC}{Rate of Change. Logical: should rates of change between adjacent bins be calculated alongside the raw counts?}
+\item{RoC}{Rate of Change. Character: how should rates of change between adjacent bins be calculated alongside the raw counts? In
+absolute terms ("a") or relative to the current bin ("r"). Defaults to NULL, in which case not calculated at all.}
 
-\item{summ}{Logical: should a summary results table be appended to the output? Defaults to TRUE. No real reason to change, except
-when called as part of a more complex function. Nb. the quantiles to use when summarising can be specified using a numeric
-vector called `quant.list`, which will be passed straight to the summarising function (`sim.summ`; see below) and defaults to
-c(0.025,0.25,0.5,0.75,0.975).}
+\item{summ}{Logical: should a summary table be calculated (allowing plotting with poly.chron, for example)? Defaults to TRUE.}
 }
 \value{
-If summ=FALSE, a long-format data table with four or five named columns: 'rep.no', integer specifying simulation run; 'bin',
+A list with two named elements:
+     "full" is a long-format data table with at least five named columns: 'rep.no', integer specifying simulation run; 'bin',
      character specifying chronological bin in terms of date range; 'bin.no' integer specifying number of bin, counting from earliest;
-     'count', numeric giving the number of entities (or total weight) assigned to the given bin in the given simulation run; 'RoC'
-     numeric giving the rate of change in count between this bin and the next (only present if RoC=TRUE).
-     If summ=TRUE, a list with two named elements: "full" is as above; "summary" is a second long format data table with four named
-     columns: 'bin', as above; 'V1', the relevant value for the given bin at a given quantile; 'quantile',
-     the quantile at which V1 is calculated; 'id', character specifying which column from "full" V1 is based on - either
-     "count" or "RoC".
+     'count', numeric giving the number of entities (or total weight) assigned to the given bin in the given simulation run; 'dummy',
+     giving the number of entities (or total weight) assigned to a bin in the dummy version of a given simulation run. If RoC=TRUE there
+     will be two more columns: 'RoC.count' and 'RoC.dummy' give the rate of change between this bin and the next for 'count' and 'dummy'
+     respectively.
+     "summary" is a second long format data table with four named columns: 'bin', as above; 'V1', the relevant value for the given bin
+     at a given quantile; 'quantile', the quantile at which V1 is calculated; 'id', character specifying which column from "full" V1 is
+     based on: e.g. "count", "dummy", "RoC.count", "RoC.dummy".
 }
 \description{
 Simulates chronological distributions from a table of entities with defined date ranges, based on assumption of uniform probability
-      between limits.
+      between limits, then (optionally) simulates a dummy set of the same size drawing from a specified distribution.
 }
 \examples{
-date.ranges <- data.table(unit=c(1, 2, 3, 4), Start=c(450, 450, 600, 1000), End=c(700, 800, 650, 1200), frags=c(3, 6, 25, 1))
-x <- date.simulate(date.ranges, weight=date.ranges$frags, context.fields="unit", start.date=500, end.date=1500, bin.width=50, reps=200)
+date.ranges <- data.table(unit=c(1, 2, 3, 4), Start=c(450, 450, 600, 1000), End=c(700, 800, 650, 1200), frag.count=c(3, 6, 25, 1))
+x <- date.simulate(date.ranges, weight=date.ranges$frag.count, context.fields="unit", start.date=500, end.date=1500)
 }
 

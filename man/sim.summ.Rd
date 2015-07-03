@@ -22,12 +22,11 @@ A long-format data table with four named columns: 'bin', character specifying ch
      function call which created 'results'.
 }
 \description{
-A utility function designed to be used within the various simulation functions in this package, but which can also be used alone if
-     useful.
+A utility function designed to be used within the simulation functions in this package, but which can also be used alone if useful.
 }
 \examples{
 date.ranges <- data.table(unit=c(1, 2, 3, 4), Start=c(450, 450, 600, 1000), End=c(700, 800, 650, 1200), frag.count=c(3, 6, 25, 1))
-x <- date.simulate(date.ranges, weight=data$frag.count, context.fields="unit", bin.width=50, reps=200, summ=FALSE)
+x <- date.simulate(date.ranges, weight=date.ranges$frag.count, context.fields="unit", bin.width=50, reps=200, summ=FALSE)
 x.summary <- sim.summ(x)
 }
 

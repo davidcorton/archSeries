@@ -1,6 +1,6 @@
 #' Boxplots for simulation output.
 #' 
-#' Plots a series of boxplots (one per bin) summarising the output from date.simulat or an associated function.
+#' Plots a series of boxplots (one per bin) summarising the output from date.simulate or an associated function.
 #' @param results A list resembling the output from date.simulate or a related function, or a data table resembling the first component 
 #'      thereof - i.e. the full simulation results.
 #' @param field.list A character vector of columns in 'results' to be plotted. Defaults to NULL, in which case all suitable 

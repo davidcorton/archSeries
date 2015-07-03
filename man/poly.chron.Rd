@@ -48,7 +48,7 @@ boxes. Defaults to 126.}
 None.
 }
 \description{
-Plots defined confidence intervals (as polygons) and medians (as lines) for output from date.simulate or anb associated function.
+Plots defined confidence intervals (as polygons) and medians (as lines) for output from date.simulate or an associated function.
 }
 \examples{
 date.ranges <- data.table(unit=c(1, 2, 3, 4), Start=c(450, 450, 600, 1000), End=c(700, 800, 650, 1200), frags=c(3, 6, 25, 1))
