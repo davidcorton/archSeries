@@ -1,4 +1,4 @@
-#' Plot medians and confidence polygons for simulation results.
+#' Plot medians and confidence zones for simulation results.
 #' 
 #' Plots defined confidence intervals (as polygons) and medians (as lines) for output from date.simulate or an associated function.
 #' @param results A list resembling the output from date.simulate or a related function, or a data table resembling the second component 

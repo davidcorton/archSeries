@@ -1,7 +1,7 @@
 #' Set up axes for archSeries plotting functions.
 #' 
 #' A utility function designed to be used within the various plot functions in this package, but which can also be used alone to set up 
-#'      axes prior to plotting data.
+#'      axes based on simulation data prior to plotting anything.
 #' @param results A list resembling the output from date.simulate or a related function, or a data table resembling one of the components
 #'      thereof.
 #' @param field.list A character vector of names of variables that are intended to be plotted. Depending on 'results' and 'type' this may 
