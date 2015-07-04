@@ -14,13 +14,13 @@ archaeology will go beyond this, however -- for example via application to zooar
 At present the package only supports aoristic analysis/simulation based on assumption of uniform probability within 
 date limits, and is only designed for frequency data. In future we hope to implement:
 
-*ability to work with non-uniform distributions, radiocarbon dates (e.g. by interfacing with the Bchron package,        **ref**).
-*ability to specify null models other than uniform or custom, and to fit these to the data before simulating dummy.
-sets (as for example with exponential growth curves in ^14*C-based demographic studies, e.g. Timpson et al. 2014).
-*a global hypothesis tester.
-*ability to specify priors for simulations of empirical data, not just for dummy sets (necessary for demographics).
-*tools for dealing with data types other than frequency, e.g. metrics.
-*additional tools for zooarchaeologica age-at-death (perhaps interfacing with the zooaRch package; **ref**)
+* ability to work with non-uniform distributions, radiocarbon dates (e.g. by interfacing with the Bchron package).
+* ability to specify null models other than uniform or custom, and to fit these to the data before simulating dummy.
+sets (as for example with exponential growth curves in 14C-based demographic studies, e.g. Timpson et al. 2014).
+* a global hypothesis tester.
+* ability to specify priors for simulations of empirical data, not just for dummy sets (necessary for demographics).
+* tools for dealing with data types other than frequency, e.g. metrics.
+* additional tools for zooarchaeologica age-at-death (perhaps interfacing with the zooaRch package).
 
 The functions fall into two groups:
 
