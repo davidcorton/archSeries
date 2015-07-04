@@ -2,7 +2,7 @@
 % Please edit documentation in R/poly.chron.R
 \name{poly.chron}
 \alias{poly.chron}
-\title{Plot medians and confidence polygons for simulation results.}
+\title{Plot medians and confidence zones for simulation results.}
 \usage{
 poly.chron(results, field.list = NULL, quant = c(0.025, 0.975),
   col.list = c("darkred", "darkgreen", "blue", "grey", "goldenrod"),

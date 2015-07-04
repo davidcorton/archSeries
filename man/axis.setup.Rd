@@ -35,7 +35,7 @@ None.
 }
 \description{
 A utility function designed to be used within the various plot functions in this package, but which can also be used alone to set up
-     axes prior to plotting data.
+     axes based on simulation data prior to plotting anything.
 }
 \examples{
 date.ranges <- data.table(unit=c(1, 2, 3, 4), Start=c(450, 450, 600, 1000), End=c(700, 800, 650, 1200), frags=c(3, 6, 25, 1))
