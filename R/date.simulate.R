@@ -41,7 +41,7 @@
 
 date.simulate <- function(data, probs=1, weight=1, real=TRUE, dummy=FALSE, comp.field=NULL, comp.values=NULL, context.fields=c("SITE_C"), 
                           quant.list=c(0.025, 0.25, 0.5, 0.75, 0.975), start.date=0, end.date=2000, bin.width=100, reps=100, RoC=NULL, 
-                          summ=FALSE) {
+                          summ=TRUE) {
     #Load required packages
     require(data.table)
     

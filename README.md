@@ -3,9 +3,7 @@
 
 ##Overview
 
-This package is designed to tackle a common problem in archaeology: the integration of information from multiple entities with varying chronological resolution and overlapping date ranges. It includes functions for constructing overall chronological distributions from tables of start dates, end dates, and weights; and for plotting those distributions in various ways. Distributions may be calculated either by basic aoristic analysis or by simulation. 
-In the latter case, 'dummy sets' can also be calculated automatically based on uniformity or on a custom null model, 
-and rates of change between bins can also be simulated.
+This package is designed to tackle a common problem in archaeology: the integration of information from multiple entities with varying chronological resolution and overlapping date ranges. It includes functions for constructing overall chronological distributions from tables of start dates, end dates, and weights; and for plotting those distributions in various ways. Distributions may be calculated either by basic aoristic analysis or by simulation. In the latter case, 'dummy sets' can also be calculated automatically based on uniformity or on a custom null model, and rates of change between bins can also be simulated. Importantly, archSeries makes use of the data.table package to run simulations extremely quickly.
 
 Borrowing heavily from ideas set out elsewhere (Crema 2012), the code released here was initially developed for meta-
 analysis of environmental archaeologica data from urban sites (Orton et al. in prep.). We hope that its uses within 
