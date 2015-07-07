@@ -16,6 +16,7 @@
 #'      straight to plot as is. Defaults to NULL, in which case the built-in scaling in plot takes over.
 #' @param type Integer: the type of simulation output to be plotted. 1 = full results (for lines.chron or box.chron), 2 = summary results 
 #'      (for poly.chron).
+#' @param axis.lab Logical. Should labels be plotted for the x axis?
 #' @param ... other graphical arguments to be passed to plot.
 #' @return None.
 #' @export
@@ -25,7 +26,7 @@
 #' axis.setup(x, lab.sp=2, type=1)
 
 axis.setup <- function(results, field.list=NULL, lab.sp=1, ylab="Estimated frequency density", ylim=NULL,
-                       type=1, ...) {
+                       type=1, axis.lab=TRUE,...) {
     if(class(results)[1]=="list") {results <- results[[type]]}
     minmaxer <- numeric(0)
     if(type==1) {
@@ -42,5 +43,6 @@ axis.setup <- function(results, field.list=NULL, lab.sp=1, ylab="Estimated frequ
     plot(minmaxer[, 2], minmaxer[, 1], xlab="", xaxt="n", ylab=ylab, type="n", ylim=ylim, ...)
     names <- unique(results$bin)
     ticks <- seq(1, length(names), by=lab.sp)
-    axis(1, at=ticks, labels=names[ticks], las=2)
+    if(axis.lab==TRUE) {labels <- names[ticks]} else {labels <- FALSE}
+    axis(1, at=ticks, labels=labels, las=2)
 }
