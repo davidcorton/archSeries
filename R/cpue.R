@@ -77,6 +77,7 @@ cpue <- function(catch, effort, wt.catch=1, wt.effort=1, context.fields=c("SITE_
     results <- merge(results, effort, by=c("rep.no", "bin"), all=TRUE)
     results[, cpue := catch / effort]
     results[is.na(results)] <- 0
+    results <- results[order(rep.no, bin.no)]
     
     #Calculate rates of change, if necessary
     if(RoC==TRUE) {
