@@ -43,6 +43,6 @@ box.chron <- function(results, field.list=NULL, col.list=c("darkred", "darkgreen
         b[i] <- rgb(a[1, i], a[2, i], a[3, i], plist[i, 3], maxColorValue=255)
     }
     for(i in 1:length(field.list)) {
-        with(results, boxplot(get(field.list[i]) ~ bin.no, outline=FALSE, xaxt="n", col=b[i], add=TRUE))
+        with(results, boxplot(get(field.list[i]) ~ bin.no, outline=FALSE, xaxt="n", yaxt="n", col=b[i], add=TRUE))
     }
 }

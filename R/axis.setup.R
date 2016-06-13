@@ -25,7 +25,7 @@
 #' x <- date.simulate(date.ranges, weight=date.ranges$frags, context.fields="unit", bin.width=50, reps=200, summ=FALSE)
 #' axis.setup(x, lab.sp=2, type=1)
 
-axis.setup <- function(results, field.list=NULL, lab.sp=1, ylab="Estimated frequency density", ylim=NULL,
+axis.setup <- function(results, field.list=NULL, lab.sp=1, ylab="Estimated frequency density", xlab="", ylim=NULL,
                        type=1, axis.lab=TRUE,...) {
     if(class(results)[1]=="list") {results <- results[[type]]}
     minmaxer <- numeric(0)
@@ -40,7 +40,7 @@ axis.setup <- function(results, field.list=NULL, lab.sp=1, ylab="Estimated frequ
     if(!is.null(ylim)) {
         if(length(ylim)==1) {ylim <- c(0, ylim)}
     }
-    plot(minmaxer[, 2], minmaxer[, 1], xlab="", xaxt="n", ylab=ylab, type="n", ylim=ylim, ...)
+    plot(minmaxer[, 2], minmaxer[, 1], xlab=xlab, xaxt="n", ylab=ylab, type="n", ylim=ylim, ...)
     names <- unique(results$bin)
     ticks <- seq(1, length(names), by=lab.sp)
     if(axis.lab==TRUE) {labels <- names[ticks]} else {labels <- FALSE}
