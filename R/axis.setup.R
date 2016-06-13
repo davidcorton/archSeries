@@ -44,5 +44,5 @@ axis.setup <- function(results, field.list=NULL, lab.sp=1, ylab="Estimated frequ
     names <- unique(results$bin)
     ticks <- seq(1, length(names), by=lab.sp)
     if(axis.lab==TRUE) {labels <- names[ticks]} else {labels <- FALSE}
-    axis(1, at=ticks, labels=labels, las=2)
+    axis(1, at=ticks, labels=labels, las=2, ...)
 }
