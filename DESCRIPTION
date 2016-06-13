@@ -1,6 +1,6 @@
 Package: archSeries
 Title: Frequency Time-Series Tools for Archaeology
-Version: 0.0.0.9001
+Version: 0.0.0.9002
 Authors@R: c(
     person("David", "Orton", email = "david.orton@york.ac.uk", role = c("aut", "cre")),
     person("James", "Morris", email = "jmorris9@uclan.ac.uk", role = "ctb"))
