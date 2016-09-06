@@ -4,22 +4,28 @@ Version: 0.0.0.9002
 Authors@R: c(
     person("David", "Orton", email = "david.orton@york.ac.uk", role = c("aut", "cre")),
     person("James", "Morris", email = "jmorris9@uclan.ac.uk", role = "ctb"))
-Description: This package is designed to tackle a common problem in archaeology: the integration of
-    information from multiple entities with varying chronological resolution and overlapping date 
-    ranges. It includes functions for constructing overall chronological distributions from tables 
-    of start dates, end dates, and weights, and for plotting those distributions in various ways. 
-    Distributions may be calculated either by basic aoristic analysis or by simulation. In the 
-    latter case, 'dummy sets' can also be calculated automatically based on uniformity or on a 
-    custom null model. At present the package only supports aoristic analysis/simulation based on 
-    assumption of uniform probability within date limits, and is only designed for frequency data. 
-    In future we hope to implement: (a) ability to work with radiocarbon dates (e.g. using the 
-    Bchron package); (b) ability to specify null models other than uniform or custom, and to fit 
-    these to the data before simulating dummy sets; (c) tools for dealing with data types other 
-    than frequency, e.g. metrical data.
-Depends: R (>= 3.0.2),
+Description: This package is designed to tackle a common problem in archaeology:
+    the integration of information from multiple entities with varying chronological
+    resolution and overlapping date ranges. It includes functions for constructing
+    overall chronological distributions from tables of start dates, end dates, and
+    weights, and for plotting those distributions in various ways. Distributions may
+    be calculated either by basic aoristic analysis or by simulation. In the latter
+    case, 'dummy sets' can also be calculated automatically based on uniformity or
+    on a custom null model. At present the package only supports aoristic analysis/
+    simulation based on assumption of uniform probability within date limits, and
+    is only designed for frequency data. In future we hope to implement: (a) ability
+    to work with radiocarbon dates (e.g. using the Bchron package); (b) ability to
+    specify null models other than uniform or custom, and to fit these to the data
+    before simulating dummy sets; (c) tools for dealing with data types other than
+    frequency, e.g. metrical data.
+Depends:
+    R (>= 3.0.2),
     data.table
-Imports: data.table (>= 1.9.4)
+Imports:
+    data.table (>= 1.9.4)
 License: GPL (>= 2)
 LazyData: true
-Suggests: knitr
+Suggests:
+    knitr
 VignetteBuilder: knitr
+RoxygenNote: 5.0.1
