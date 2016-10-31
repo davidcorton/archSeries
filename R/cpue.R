@@ -51,7 +51,7 @@ cpue <- function(catch, effort, wt.catch=1, wt.effort=1, context.fields=c("SITE_
     if(is.null(start.date)) {
         start.date <- min(catch$Start, effort$Start)
     }
-    if(us.null(end.date)) {
+    if(is.null(end.date)) {
         end.date <- max(catch$End, effort$End)
     }
     catch <- catch[End >= start.date & Start <= end.date] #excludes ranges that fall entirely outside the study period

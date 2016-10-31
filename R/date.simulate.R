@@ -53,7 +53,7 @@ date.simulate <- function(data, probs=1, weight=1, ds.fun=sum, real=TRUE, dummy=
     if(is.null(start.date)) {
         start.date <- min(data$Start)
     }
-    if(us.null(end.date)) {
+    if(is.null(end.date)) {
         end.date <- max(data$End)
     }
     data <- data[End >= start.date & Start <= end.date]  #drops records outside the date range FROM BOTH SIMULATION SETS

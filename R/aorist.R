@@ -25,7 +25,7 @@ aorist <- function(data, weight=1, start.date=NULL, end.date=NULL, bin.width=100
     if(is.null(start.date)) {
         start.date <- min(data$Start)
     }
-    if(us.null(end.date)) {
+    if(is.null(end.date)) {
         end.date <- max(data$End)
     }
     data <- data[End >= start.date & Start <= end.date] #excludes ranges that fall entirely outside the study period
