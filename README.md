@@ -1,24 +1,25 @@
 #archSeries
-##Frequency Time-Series Tools for Archaeology
+##Tools for Chronological Uncertainty in Archaeology
 
 ##Overview
 
 This package is designed to tackle a common problem in archaeology: the integration of information from multiple entities with varying chronological resolution and overlapping date ranges. It includes functions for constructing overall chronological distributions from tables of start dates, end dates, and weights; and for plotting those distributions in various ways. Distributions may be calculated either by basic aoristic analysis or by simulation. In the latter case, 'dummy sets' can also be calculated automatically based on uniformity or on a custom null model, and rates of change between bins can also be simulated. Importantly, archSeries makes use of the data.table package to run simulations extremely quickly.
 
 Borrowing heavily from ideas set out elsewhere (Crema 2012), the code released here was initially developed for meta-
-analysis of environmental archaeologica data from urban sites (Orton et al. in prep.). We hope that its uses within 
-archaeology will go beyond this, however -- for example via application to zooarchaeological age-at-death studies (see e.g. Bréhard et al. 2014; the *surv.convert* is already included to this end) and perhaps eventually to human demographics, though the latter would require a suite of additional features.
+analysis of environmental archaeological data from urban sites (Orton et al. in press). We hope that its uses within 
+archaeology will go beyond this, however -- for example via application to zooarchaeological age-at-death studies (see e.g. Bréhard et al. 2014; the *surv.convert* function is already included to this end) and perhaps eventually to human demographics, though the latter would require a suite of additional features.
 
 At present the package only supports aoristic analysis/simulation based on assumption of uniform probability within 
 date limits, and is only designed for frequency data. In future we hope to implement:
 
-* ability to work with non-uniform distributions, radiocarbon dates (e.g. by interfacing with the Bchron package).
+* use of beta distribution for simulation from date ranges, instead of just uniform (see Baxter & Cool 2016).
+* ability to work with radiocarbon dates (e.g. by interfacing with the Bchron package).
 * ability to specify null models other than uniform or custom, and to fit these to the data before simulating dummy.
 sets (as for example with exponential growth curves in 14C-based demographic studies, e.g. Timpson et al. 2014).
-* a global hypothesis tester.
+* a global hypothesis tester (see e.g Timpson et al. 2014).
 * ability to specify priors for simulations of empirical data, not just for dummy sets (necessary for demographics).
-* tools for dealing with data types other than frequency, e.g. metrics.
-* additional tools for zooarchaeologica age-at-death (perhaps interfacing with the zooaRch package).
+* additional tools for zooarchaeological age-at-death (perhaps interfacing with the zooaRch package).
+* faster aorist calculations using data.table::foverlaps() (suggestion from Matt Harris).
 
 The functions fall into two groups:
 
@@ -27,7 +28,7 @@ The functions fall into two groups:
 
 ##Analysis functions
 
-There are three main analysis functions: *aorist*, *date.simulate*, and *cpue*. The former is deterministic and produces a single simple table of chronological bins and corresponding probability densities; the latter are both based on simulation and produce output in a standard format. This is a list of two data tables, the first ("full") containing full simulation results and the second ("summary") containing a summary table of quantiles based on the first. In the case of *cpue*, certain arguments can result in the addition of a third component ("small.n"): a list of lists defining areas of low confidence. This standard output format could be thought of as a special class of object, though it is not (yet?) formally defined as such. In any case, the main plotting functions are designed to work directly with it.
+There are three main analysis functions: *aorist*, *date.simulate*, and *cpue*. The former is deterministic and produces a single simple table of chronological bins and corresponding probability densities; the latter are both based on simulation and produce output in a standard format. This is a list of two data tables, the first ("full") containing full simulation results and the second ("summary") containing a summary table of quantiles based on the first. In the case of *cpue*, certain arguments can result in the addition of a third component ("small.n"): a list of lists defining areas of low confidence. This standard output format could be thought of as a special class of object, though it is not formally defined as such. In any case, the main plotting functions are designed to work directly with it.
 
 ####**aorist:** calculate the aoristic sum for a group of entities with defined date limits.
 Calculates aoristic sum from a table of entities with defined date ranges, based on assumption of uniform probability between limits. Returns a two-column data table listing the calculated total probability density for each chronological bin.
@@ -70,9 +71,10 @@ A utility function sometimes called by main archSeries plotting functions when d
 
 ## References
 
+* Baxter, M.J. & H.E.M. Cool (2016) Reinventing the wheel? Modelling temporal uncertainty with applications to brooch distributions in Roman Britain. *Journal of Archaeological Science*, **66**, 12-127.
 * Bréhard, S., V. Radu, A. Martin, P. Hanot, D. Popovici & A. Bălăşescu (2014) Food supply strategies in the Romanian Eneolithic: sheep/goat husbandry and fishing activities from Hârşova Tell and Borduşani-Popină (5th Millennium bc). *European Journal of Archaeology*, **17**, 407–433.
 * Crema, E. (2012) Modelling temporal uncertainty in archaeological analysis. *Journal of Archaeological Method and Theory*, **19**, 440-461.
-* Orton, D.C., J. Morris & S. Ostrich (in prep) Catch per unit (research) effort: the Fish Event Horizon revisited via calibrated time-series of fish bone data from London. For submission to *Open Quaternary*
+* Orton, D.C., J. Morris & A. Pipe (submitted) Catch per unit (research) effort: the Fish Event Horizon revisited via calibrated time-series of fish bone data from London. *Open Quaternary*.
 * Timpson, A., S. Colledge, E. Crema, K. Edinborough, T. Kerig, K. Manning, M.G. Thomas & S. Shennan (2014) Reconstructing regional population fluctuations in the European Neolithic using radiocarbon dates: a new case-study using an improved method. *Journal of Archaeological Science*, **52**, 549–557.
 
 

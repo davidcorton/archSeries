@@ -8,7 +8,7 @@ aorist.plot(aorist, col = "grey", opacity = 255, lab.sp = 1,
   add = FALSE, ...)
 }
 \arguments{
-\item{aorist}{The output from an aorist call, or any data table with a character or factor column called 'bin' and a numeric column 
+\item{aorist}{The output from an aorist call, or any data table with a character or factor column called 'bin' and a numeric column
 called aorist.}
 
 \item{col}{Character: colour of bars. Defined formally here rather than passed via ... simply so that it can be combined with 'opacity'.}
@@ -28,7 +28,7 @@ None.
 Just a wrapper for barplot with some tweaks added, e.g. to make bars line up with data plotted by other archSeries functions.
 }
 \examples{
-date.ranges <- data.table(Start=c(450, 450, 600, 1000, 1200), End=c(700, 800, 650, 1200, 1550), frag.count=c(3, 6, 25, 1, 8))
+date.ranges <- data.table(Start=c(450, 450, 600), End=c(700, 800, 650), frag.count=c(3, 6, 25))
 x <- aorist(date.ranges, weight=date.ranges$frag.count, 500, 1500, bin.width=50)
 aorist.plot(x, col="grey60", ylab="Total probability density")
 }

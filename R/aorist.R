@@ -11,12 +11,11 @@
 #'      'aorist', a numeric vector giving the total probability mass assigned to each bin.
 #' @export
 #' @examples
-#' date.ranges <- data.table(Start=c(450, 450, 600, 1000, 1200), End=c(700, 800, 650, 1200, 1550), frag.count=c(3, 6, 25, 1, 8))
+#' date.ranges <- data.table(Start=c(450, 450, 600), End=c(700, 800, 650), frag.count=c(3, 6, 25))
 #' x <- aorist(date.ranges, weight=date.ranges$frag.count, 500, 1500, bin.width=50)
 
 aorist <- function(data, weight=1, start.date=NULL, end.date=NULL, bin.width=100) {
-    #Load required package
-    require(data.table)
+    End <- Start <- duration <- weight.per.unit <- breaks <- NULL
 
     #Tidies up input data
     data <- data.table(cbind(data, weight)) #appends weights to list of date ranges, recycling if necessary (e.g. for uniform weight)
@@ -35,7 +34,7 @@ aorist <- function(data, weight=1, start.date=NULL, end.date=NULL, bin.width=100
     data[, weight.per.unit := weight / duration]
 
     #Set up breaks and labels
-    breaks <<- seq(start.date, end.date, bin.width) #creates and saves vector of breaks
+    breaks <- seq(start.date, end.date, bin.width) #creates and saves vector of breaks
     labels <- numeric(0)
     for(i in 1:(length(breaks) - 1)) {
         labels[i] <- paste(breaks[i], breaks[i + 1], sep="-") #sets bin labels

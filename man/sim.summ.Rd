@@ -16,17 +16,17 @@ sim.summ(results, summ.col = NULL, quant.list = c(0.025, 0.25, 0.5, 0.75,
 \item{quant.list}{Numeric vector of quantiles to be calculated in a summary table. Defaults to c(0.025,0.25,0.5,0.75,0.975).}
 }
 \value{
-A long-format data table with four named columns: 'bin', character specifying chronological bin in terms of date range; 'V1', 
-     the relevant value for the given bin at a given quantile; 'quantile', the quantile at which V1 is calculated; 'id', character 
-     specifying which column from 'results' V1 is based on: potentially "count", "dummy", "RoC.count", or "RoC.dummy" depending on the 
+A long-format data table with four named columns: 'bin', character specifying chronological bin in terms of date range; 'V1',
+     the relevant value for the given bin at a given quantile; 'quantile', the quantile at which V1 is calculated; 'id', character
+     specifying which column from 'results' V1 is based on: potentially "count", "dummy", "RoC.count", or "RoC.dummy" depending on the
      function call which created 'results'.
 }
 \description{
 A utility function designed to be used within the simulation functions in this package, but which can also be used alone if useful.
 }
 \examples{
-date.ranges <- data.table(unit=c(1, 2, 3, 4), Start=c(450, 450, 600, 1000), End=c(700, 800, 650, 1200), frag.count=c(3, 6, 25, 1))
-x <- date.simulate(date.ranges, weight=date.ranges$frag.count, context.fields="unit", bin.width=50, reps=200, summ=FALSE)
+date.ranges <- data.table(Start=c(450, 450, 600), End=c(700, 800, 650), frag.count=c(3, 6, 25))
+x <- date.simulate(date.ranges, weight=date.ranges$frag.count, bin.width=50, reps=200, summ=FALSE)
 x.summary <- sim.summ(x)
 }
 

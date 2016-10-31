@@ -12,21 +12,23 @@ axis.setup(results, field.list = NULL, lab.sp = 1,
 \item{results}{A list resembling the output from date.simulate or a related function, or a data table resembling one of the components
 thereof.}
 
-\item{field.list}{A character vector of names of variables that are intended to be plotted. Depending on 'results' and 'type' this may 
-mean column names in a full simulation output or values of 'id' in a summary table. Defaults to NULL, in which case all suitable 
-variables in 'results' are used. Nb. variables entitled "catch" or "effort" will be ignored, due to their roles in output from 
+\item{field.list}{A character vector of names of variables that are intended to be plotted. Depending on 'results' and 'type' this may
+mean column names in a full simulation output or values of 'id' in a summary table. Defaults to NULL, in which case all suitable
+variables in 'results' are used. Nb. variables entitled "catch" or "effort" will be ignored, due to their roles in output from
 cpue.}
 
 \item{lab.sp}{Integer: intervals at which to place bin labels. Defaults to 1, i.e. labelling every bin.}
 
-\item{ylab}{Character: label for the y-axis. Defaults to "Estimated frequency density" (which is the only reason for making it a 
+\item{ylab}{Character: label for the y-axis. Defaults to "Estimated frequency density" (which is the only reason for making it a
 formal argument here rather than just allowing it to be passed to plot via ...).}
 
-\item{ylim}{Numeric: an easy way to override the built-in scaling in plot - if a vector of length 1 is passed it will 
-be converted into c(0, ylim) to be passed to the ylim argument in plot. Alternatively a vector of length 2 will be passed 
+\item{xlab}{Character: label for the x-axis. Defaults to "".}
+
+\item{ylim}{Numeric: an easy way to override the built-in scaling in plot - if a vector of length 1 is passed it will
+be converted into c(0, ylim) to be passed to the ylim argument in plot. Alternatively a vector of length 2 will be passed
 straight to plot as is. Defaults to NULL, in which case the built-in scaling in plot takes over.}
 
-\item{type}{Integer: the type of simulation output to be plotted. 1 = full results (for lines.chron or box.chron), 2 = summary results 
+\item{type}{Integer: the type of simulation output to be plotted. 1 = full results (for lines.chron or box.chron), 2 = summary results
 (for poly.chron).}
 
 \item{axis.lab}{Logical. Should labels be plotted for the x axis?}
@@ -37,12 +39,12 @@ straight to plot as is. Defaults to NULL, in which case the built-in scaling in 
 None.
 }
 \description{
-A utility function designed to be used within the various plot functions in this package, but which can also be used alone to set up 
+A utility function designed to be used within the various plot functions in this package, but which can also be used alone to set up
      axes based on simulation data prior to plotting anything.
 }
 \examples{
-date.ranges <- data.table(unit=c(1, 2, 3, 4), Start=c(450, 450, 600, 1000), End=c(700, 800, 650, 1200), frags=c(3, 6, 25, 1))
-x <- date.simulate(date.ranges, weight=date.ranges$frags, context.fields="unit", bin.width=50, reps=200, summ=FALSE)
+date.ranges <- data.table(Start=c(450, 450, 600), End=c(700, 800, 650), frags=c(3, 6, 25))
+x <- date.simulate(date.ranges, weight=date.ranges$frags, context.fields=NULL, summ=FALSE)
 axis.setup(x, lab.sp=2, type=1)
 }
 

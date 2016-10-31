@@ -9,7 +9,7 @@
 #' @param wt.effort Numeric vector: the weight to be applied to each row in `effort`, or a constant weight to be applied to all.
 #'      Defaults to 1.
 #' @param context.fields Character vector specifying the column(s) in data which define the minimal stratigraphic entities to analyse.
-#'      Defaults to "SITE_C".
+#'      Defaults to "ID".
 #' @param UoA Unit of Analysis: character vector of names of additional columns by which to group data when aggregating weights,
 #'      on top of those specified in context.field. For example, should different taxa be lumped together when analysing bone remains
 #'      from a table of contexts? Defaults to NULL.
@@ -34,14 +34,14 @@
 #'      where the simulated value of effort is below the corresponding value in small.n, set up for plotting using grey.zones (either
 #'      alone or within any of the main archSeries plotting functions).
 #' @export
+#' @import data.table
 #' @examples
-#' dates <- data.table(unit=c(1, 2, 3, 4), Start=c(450, 450, 600, 1000), End=c(700, 800, 650, 1200), frags=c(3, 6, 2, 1), vol=c(40, 40, 40, 40))
+#' dates <- data.table(Start=c(450, 450, 600), End=c(700, 800, 650), frags=c(3,6,2), vol=c(40, 40, 40))
 #' x <- cpue(dates, dates, dates$frags, dates$vol, context.fields=NULL, small.n=1, reps=1000)
 
-cpue <- function(catch, effort, wt.catch=1, wt.effort=1, context.fields=c("SITE_C"), UoA=NULL, quant.list=c(0.025, 0.25, 0.5, 0.75, 0.975),
-                 start.date=NULL, end.date=NULL, bin.width=100, reps=100, RoC=FALSE, small.n=NULL, ...) {
-    #Load required package
-    require(data.table)
+cpue <- function(catch, effort, wt.catch=1, wt.effort=1, context.fields=c("ID"), UoA=NULL, quant.list=c(0.025, 0.25, 0.5, 0.75, 0.975),
+                 start.date=NULL, end.date=NULL, bin.width=100, reps=100, RoC=FALSE, small.n=NULL) {
+    End <- Start <- breaks <- sim <- bin <- bin.no <- NULL
 
     #Tidy up input data and apply filters
     catch <- data.table(cbind(catch, wt.catch)) #appends weights to list of date ranges, recycling if necessary (e.g. for uniform weight)

@@ -4,34 +4,34 @@
 \alias{cpue}
 \title{Catch Per Unit Effort simulator}
 \usage{
-cpue(catch, effort, wt.catch = 1, wt.effort = 1,
-  context.fields = c("SITE_C"), UoA = NULL, quant.list = c(0.025, 0.25,
-  0.5, 0.75, 0.975), start.date = 0, end.date = 2000, bin.width = 100,
-  reps = 100, RoC = FALSE, small.n = NULL, ...)
+cpue(catch, effort, wt.catch = 1, wt.effort = 1, context.fields = c("ID"),
+  UoA = NULL, quant.list = c(0.025, 0.25, 0.5, 0.75, 0.975),
+  start.date = NULL, end.date = NULL, bin.width = 100, reps = 100,
+  RoC = FALSE, small.n = NULL)
 }
 \arguments{
 \item{catch}{Data table (or object that can be coerced to one) with, minimally, two numeric columns called Start and End.}
 
 \item{effort}{Data table (or object that can be coerced to one) with, minimally, two numeric columns called Start and End.}
 
-\item{wt.catch}{Numeric vector: the weight to be applied to each row in `catch', or a constant weight to be applied to all. 
+\item{wt.catch}{Numeric vector: the weight to be applied to each row in `catch', or a constant weight to be applied to all.
 Defaults to 1.}
 
 \item{wt.effort}{Numeric vector: the weight to be applied to each row in `effort`, or a constant weight to be applied to all.
 Defaults to 1.}
 
-\item{context.fields}{Character vector specifying the column(s) in data which define the minimal stratigraphic entities to analyse. 
-Defaults to "SITE_C".}
+\item{context.fields}{Character vector specifying the column(s) in data which define the minimal stratigraphic entities to analyse.
+Defaults to "ID".}
 
 \item{UoA}{Unit of Analysis: character vector of names of additional columns by which to group data when aggregating weights,
-on top of those specified in context.field. For example, should different taxa be lumped together when analysing bone remains 
+on top of those specified in context.field. For example, should different taxa be lumped together when analysing bone remains
 from a table of contexts? Defaults to NULL.}
 
 \item{quant.list}{Numeric vector of quantiles to be calculated in a summary table. Defaults to c(0.025,0.25,0.5,0.75,0.975).}
 
-\item{start.date}{Numeric: the start of time period to be considered. Defaults to 0.}
+\item{start.date}{Numeric: the start of time period to be considered. Defaults to lowest value in data$Start.}
 
-\item{end.date}{Numeric: the end of time period to be considered. Defaults to 2000.}
+\item{end.date}{Numeric: the end of time period to be considered. Defaults to highest value in data$End.}
 
 \item{bin.width}{Numeric: the resolution of the analysis, in units of time. Defaults to 100.}
 
@@ -39,28 +39,28 @@ from a table of contexts? Defaults to NULL.}
 
 \item{RoC}{Rate of Change. Logical: should rates of change between adjacent bins be calculated alongside the raw counts?}
 
-\item{small.n}{Numeric: vector specifying one or more cut-off values to be used to flag periods of where the underlying sample size (i.e. 
+\item{small.n}{Numeric: vector specifying one or more cut-off values to be used to flag periods of where the underlying sample size (i.e.
 magnitude of effort) is small. If multiple values are passed they should be in descending order.}
 }
 \value{
 Minimally, a list with two named elements:
-     "full" is a data table with six or seven columns: 'rep.no', integer specifying simulation run; 'bin', character specifying 
-     chronological bin in terms of date range; 'bin.no' integer specifying number of bin, counting from earliest; 'catch', giving the 
-     simulated frequency of 'catch'; and 'effort', giving the simulated magnitude of 'effort'. If RoC=TRUE there will be an additional 
+     "full" is a data table with six or seven columns: 'rep.no', integer specifying simulation run; 'bin', character specifying
+     chronological bin in terms of date range; 'bin.no' integer specifying number of bin, counting from earliest; 'catch', giving the
+     simulated frequency of 'catch'; and 'effort', giving the simulated magnitude of 'effort'. If RoC=TRUE there will be an additional
      column, 'RoC', giving the rate of change in cpue between the given bin and the next.
-     "summary" is a second long format data table with four named columns: 'bin', as above; 'V1', the relevant value for the given bin 
-     at a given quantile; 'quantile', the quantile at which V1 is calculated; 'id', character specifying which column from "full" V1 is 
+     "summary" is a second long format data table with four named columns: 'bin', as above; 'V1', the relevant value for the given bin
+     at a given quantile; 'quantile', the quantile at which V1 is calculated; 'id', character specifying which column from "full" V1 is
      based on: "cpue" or "RoC" (catch and effort are ignored when summarising).
-     If one or more values are passed to 'small.n', then this list will have a third element, "boxes". This is a list of length equal 
-     to the length of small.n. Each component is a list of four-row data frames giving coordinates that define boxes around periods 
-     where the simulated value of effort is below the corresponding value in small.n, set up for plotting using grey.zones (either 
+     If one or more values are passed to 'small.n', then this list will have a third element, "boxes". This is a list of length equal
+     to the length of small.n. Each component is a list of four-row data frames giving coordinates that define boxes around periods
+     where the simulated value of effort is below the corresponding value in small.n, set up for plotting using grey.zones (either
      alone or within any of the main archSeries plotting functions).
 }
 \description{
 Estimates the relationship between a denominator and a numerator variable over time
 }
 \examples{
-dates <- data.table(unit=c(1, 2, 3, 4), Start=c(450, 450, 600, 1000), End=c(700, 800, 650, 1200), frags=c(3, 6, 2, 1), vol=c(40, 40, 40, 40))
+dates <- data.table(Start=c(450, 450, 600), End=c(700, 800, 650), frags=c(3,6,2), vol=c(40, 40, 40))
 x <- cpue(dates, dates, dates$frags, dates$vol, context.fields=NULL, small.n=1, reps=1000)
 }
 

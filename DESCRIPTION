@@ -1,6 +1,6 @@
 Package: archSeries
-Title: Frequency Time-Series Tools for Archaeology
-Version: 0.0.0.9002
+Title: Tools for Chronological Uncertainty in Archaeology
+Version: 0.0.0.9003
 Authors@R: c(
     person("David", "Orton", email = "david.orton@york.ac.uk", role = c("aut", "cre")),
     person("James", "Morris", email = "jmorris9@uclan.ac.uk", role = "ctb"))
@@ -16,13 +16,10 @@ Description: This package is designed to tackle a common problem in archaeology:
     is only designed for frequency data. In future we hope to implement: (a) ability
     to work with radiocarbon dates (e.g. using the Bchron package); (b) ability to
     specify null models other than uniform or custom, and to fit these to the data
-    before simulating dummy sets; (c) tools for dealing with data types other than
-    frequency, e.g. metrical data.
+    before simulating dummy sets; (c) use of beta distribution instead of just uniform.
 Depends:
     R (>= 3.0.2),
     data.table
-Imports:
-    data.table (>= 1.9.4)
 License: GPL (>= 2)
 LazyData: true
 Suggests:

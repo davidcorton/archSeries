@@ -7,7 +7,7 @@
 date.simulate(data, probs = 1, weight = 1, ds.fun = sum, real = TRUE,
   dummy = FALSE, comp.field = NULL, comp.values = NULL,
   context.fields = c("ID"), quant.list = c(0.025, 0.25, 0.5, 0.75, 0.975),
-  start.date = 0, end.date = 2000, bin.width = 100, reps = 100,
+  start.date = NULL, end.date = NULL, bin.width = 100, reps = 100,
   RoC = NULL, summ = TRUE)
 }
 \arguments{
@@ -34,13 +34,13 @@ unique values (exlcuding blanks and NAs) are compared if comp.field is not NULL.
 
 \item{context.fields}{Character vector specifying the column(s) in data which define the minimal stratigraphic entities to analyse.
 Add more column names if you want to group the data by additional criteria prior to simulations - For example, should different
-taxa be treated separately rather than lumped together when analysing bone remains from a table of contexts? Defaults to "SITE_C".}
+taxa be treated separately rather than lumped together when analysing bone remains from a table of contexts? Defaults to "ID".}
 
 \item{quant.list}{Numeric vector of quantiles to be calculated in a summary table. Defaults to c(0.025,0.25,0.5,0.75,0.975).}
 
-\item{start.date}{Numeric: the start of time period to be considered. Defaults to 0.}
+\item{start.date}{Numeric: the start of time period to be considered. Defaults to lowest value in data$Start.}
 
-\item{end.date}{Numeric: the end of time period to be considered. Defaults to 2000.}
+\item{end.date}{Numeric: the end of time period to be considered. Defaults to highest value in data$End.}
 
 \item{bin.width}{Numeric: the resolution of the analysis, in units of time. Defaults to 100.}
 
@@ -68,7 +68,7 @@ Simulates chronological distributions from a table of entities with defined date
       between limits, then (optionally) simulates a dummy set of the same size drawing from a specified distribution.
 }
 \examples{
-date.ranges <- data.table(unit=c(1, 2, 3, 4), Start=c(450, 450, 600, 1000), End=c(700, 800, 650, 1200), frag.count=c(3, 6, 25, 1))
-x <- date.simulate(date.ranges, weight=date.ranges$frag.count, context.fields="unit", start.date=500, end.date=1500)
+date.ranges <- data.table(ID=c(1, 2, 3), Start=c(450, 450, 600), End=c(700, 800, 650))
+x <- date.simulate(date.ranges, weight=date.ranges$frag.count, context.fields=NULL)
 }
 
