@@ -65,7 +65,7 @@ cpue <- function(catch, effort, wt.catch=1, wt.effort=1, context.fields=c("ID"),
     data <- merge(catch, effort, by=c(context.fields, "Start", "End"), all=TRUE)
 
     #Set up breaks and labels
-    breaks <<- seq(start.date, end.date, bin.width) #sets breaks and saves them externally
+    breaks <- seq(start.date, end.date, bin.width) #sets breaks
     labels <- numeric(0)
     for(i in 1:(length(breaks)-1 )) {
         labels[i] <- paste(breaks[i], breaks[i + 1], sep="-") #sets bin labels
