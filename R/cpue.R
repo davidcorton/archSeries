@@ -14,8 +14,8 @@
 #'      on top of those specified in context.field. For example, should different taxa be lumped together when analysing bone remains
 #'      from a table of contexts? Defaults to NULL.
 #' @param quant.list Numeric vector of quantiles to be calculated in a summary table. Defaults to c(0.025,0.25,0.5,0.75,0.975).
-#' @param start.date Numeric: the start of time period to be considered. Defaults to 0.
-#' @param end.date Numeric: the end of time period to be considered. Defaults to 2000.
+#' @param start.date Numeric: the start of time period to be considered. Defaults to lowest value in data$Start.
+#' @param end.date Numeric: the end of time period to be considered. Defaults to highest value in data$End.
 #' @param bin.width Numeric: the resolution of the analysis, in units of time. Defaults to 100.
 #' @param reps Integer: the number of times the simulation will be run. Defaults to 100.
 #' @param RoC Rate of Change. Logical: should rates of change between adjacent bins be calculated alongside the raw counts?

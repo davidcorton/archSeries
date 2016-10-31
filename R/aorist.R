@@ -4,8 +4,8 @@
 #' @param data Data table with (minimally) two numeric columns called Start and End.
 #' @param weight Numeric vector. The weight to be applied to each row in `data`, or a constant weight to be applied to all.
 #'      Defaults to 1.
-#' @param start.date Numeric. Start of time period to be considered. Defaults to 0.
-#' @param end.date Numeric. End of time period to be considered. Defaults to 2000.
+#' @param start.date Numeric. Start of time period to be considered. Defaults to lowest value in data$Start.
+#' @param end.date Numeric. End of time period to be considered. Defaults to highest value in data$End.
 #' @param bin.width Numeric. The resolution of the analysis, in units of time. Defaults to 100.
 #' @return data table with two named columns: 'bin', a character vector specifying the date range represented by each chronological bin;
 #'      'aorist', a numeric vector giving the total probability mass assigned to each bin.
