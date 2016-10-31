@@ -42,12 +42,20 @@
 #' x <- date.simulate(date.ranges, weight=date.ranges$frag.count, context.fields="unit", start.date=500, end.date=1500)
 
 date.simulate <- function(data, probs=1, weight=1, ds.fun=sum, real=TRUE, dummy=FALSE, comp.field=NULL, comp.values=NULL, context.fields=c("ID"),
-                          quant.list=c(0.025, 0.25, 0.5, 0.75, 0.975), start.date=0, end.date=2000, bin.width=100, reps=100, RoC=NULL, summ=TRUE) {
+                          quant.list=c(0.025, 0.25, 0.5, 0.75, 0.975), start.date=NULL, end.date=NULL, bin.width=100, reps=100, RoC=NULL, summ=TRUE) {
     #Load required packages
     require(data.table)
 
-    #Tidy up input data; apply filters
+    #Tidy up input data
     data <- data.table(cbind(data, weight)) #appends weights to list of date ranges, recycling if necessary (e.g. for uniform weight)
+
+    #Read start and end dates from input data if not specified
+    if(is.null(start.date)) {
+        start.date <- min(data$Start)
+    }
+    if(us.null(end.date)) {
+        end.date <- max(data$End)
+    }
     data <- data[End >= start.date & Start <= end.date]  #drops records outside the date range FROM BOTH SIMULATION SETS
 
     #Aggregate data
