@@ -21,6 +21,8 @@
 #' @param quant.list Numeric vector of quantiles to be calculated in a summary table. Defaults to c(0.025,0.25,0.5,0.75,0.975).
 #' @param start.date Numeric: the start of time period to be considered. Defaults to lowest value in data$Start.
 #' @param end.date Numeric: the end of time period to be considered. Defaults to highest value in data$End.
+#' @param a Numeric: alpha parameter of beta distribution. Must be positive (negative values will be converted). Defaults to 1, for uniformity.
+#' @param b Numeric: beta parameter of beta distribution. Must be positive (negative values will be converted).Defaults to 1, for uniformity.
 #' @param bin.width Numeric: the resolution of the analysis, in units of time. Defaults to 100.
 #' @param reps Integer: the number of times the simulation will be run. Defaults to 100.
 #' @param RoC Rate of Change. Character: how should rates of change between adjacent bins be calculated alongside the raw counts? In
@@ -42,7 +44,8 @@
 #' x <- date.simulate(date.ranges, weight=date.ranges$frag.count, context.fields=NULL)
 
 date.simulate <- function(data, probs=1, weight=1, ds.fun=sum, real=TRUE, dummy=FALSE, comp.field=NULL, comp.values=NULL, context.fields=c("ID"),
-                          quant.list=c(0.025, 0.25, 0.5, 0.75, 0.975), start.date=NULL, end.date=NULL, bin.width=100, reps=100, RoC=NULL, summ=TRUE) {
+                          quant.list=c(0.025, 0.25, 0.5, 0.75, 0.975), start.date=NULL, end.date=NULL, a=1, b=1, bin.width=100, reps=100,
+                          RoC=NULL, summ=TRUE) {
     End <- Start <- sim <- bin <- .SD <- bin.no <- dummy.bin <- NULL
 
     #Tidy up input data
@@ -90,7 +93,7 @@ date.simulate <- function(data, probs=1, weight=1, ds.fun=sum, real=TRUE, dummy=
     if(real==TRUE) {
 
         #Perform simulation
-        data[, sim := {x <- runif(nrow(data)); (x * (data$End - data$Start)) + data$Start}] #simulates a date for each row
+        data[, sim := {x <- rbeta(nrow(data), abs(a), abs(b)); (x * (data$End - data$Start)) + data$Start}] #simulates a date for each row
         data[, bin := cut(sim, breaks, labels=labels)] #finds the relevant bin for each simulated date
 
         #Aggregate by bin
