@@ -7,8 +7,8 @@
 date.simulate(data, probs = 1, weight = 1, ds.fun = sum, real = TRUE,
   dummy = FALSE, comp.field = NULL, comp.values = NULL,
   context.fields = c("ID"), quant.list = c(0.025, 0.25, 0.5, 0.75, 0.975),
-  start.date = NULL, end.date = NULL, bin.width = 100, reps = 100,
-  RoC = NULL, summ = TRUE)
+  start.date = NULL, end.date = NULL, a = 1, b = 1, bin.width = 100,
+  reps = 100, RoC = NULL, summ = TRUE)
 }
 \arguments{
 \item{data}{Data table (or object that can be coerced to one) with, minimally, two numeric columns called Start and End.}
@@ -41,6 +41,10 @@ taxa be treated separately rather than lumped together when analysing bone remai
 \item{start.date}{Numeric: the start of time period to be considered. Defaults to lowest value in data$Start.}
 
 \item{end.date}{Numeric: the end of time period to be considered. Defaults to highest value in data$End.}
+
+\item{a}{Numeric: alpha parameter of beta distribution. Must be positive (negative values will be converted). Defaults to 1, for uniformity.}
+
+\item{b}{Numeric: beta parameter of beta distribution. Must be positive (negative values will be converted).Defaults to 1, for uniformity.}
 
 \item{bin.width}{Numeric: the resolution of the analysis, in units of time. Defaults to 100.}
 

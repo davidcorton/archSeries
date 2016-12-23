@@ -44,7 +44,7 @@ Plots a series of boxplots (one per bin) summarising the output from date.simula
 }
 \examples{
 date.ranges <- data.table(ID=c(1, 2, 3, 4), Start=c(450, 450, 600, 900), End=c(700, 800, 650, 1200))
-x <- freq.simulate(date.ranges, weight=date.ranges$frags, bin.width=50, reps=200, summ=FALSE)
+x <- date.simulate(date.ranges, weight=date.ranges$frags, summ=FALSE)
 box.chron(x, field.list="count")
 }
 
