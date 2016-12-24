@@ -42,9 +42,11 @@ taxa be treated separately rather than lumped together when analysing bone remai
 
 \item{end.date}{Numeric: the end of time period to be considered. Defaults to highest value in data$End.}
 
-\item{a}{Numeric: alpha parameter of beta distribution. Must be positive (negative values will be converted). Defaults to 1, for uniformity.}
+\item{a}{Numeric vector: alpha parameter of beta distribution for each row in 'data', or a constant parameter to be used in each case.
+Must be positive (negative values will be converted). Defaults to 1, for uniformity.}
 
-\item{b}{Numeric: beta parameter of beta distribution. Must be positive (negative values will be converted).Defaults to 1, for uniformity.}
+\item{b}{Numeric vector: beta parameter of beta distribution for each row in 'data', or a constant parameter to be used in each case.
+Must be positive (negative values will be converted).Defaults to 1, for uniformity.}
 
 \item{bin.width}{Numeric: the resolution of the analysis, in units of time. Defaults to 100.}
 

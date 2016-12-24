@@ -21,8 +21,10 @@
 #' @param quant.list Numeric vector of quantiles to be calculated in a summary table. Defaults to c(0.025,0.25,0.5,0.75,0.975).
 #' @param start.date Numeric: the start of time period to be considered. Defaults to lowest value in data$Start.
 #' @param end.date Numeric: the end of time period to be considered. Defaults to highest value in data$End.
-#' @param a Numeric: alpha parameter of beta distribution. Must be positive (negative values will be converted). Defaults to 1, for uniformity.
-#' @param b Numeric: beta parameter of beta distribution. Must be positive (negative values will be converted).Defaults to 1, for uniformity.
+#' @param a Numeric vector: alpha parameter of beta distribution for each row in 'data', or a constant parameter to be used in each case.
+#'      Must be positive (negative values will be converted). Defaults to 1, for uniformity.
+#' @param b Numeric vector: beta parameter of beta distribution for each row in 'data', or a constant parameter to be used in each case.
+#'      Must be positive (negative values will be converted).Defaults to 1, for uniformity.
 #' @param bin.width Numeric: the resolution of the analysis, in units of time. Defaults to 100.
 #' @param reps Integer: the number of times the simulation will be run. Defaults to 100.
 #' @param RoC Rate of Change. Character: how should rates of change between adjacent bins be calculated alongside the raw counts? In
@@ -49,7 +51,7 @@ date.simulate <- function(data, probs=1, weight=1, ds.fun=sum, real=TRUE, dummy=
     End <- Start <- sim <- bin <- .SD <- bin.no <- dummy.bin <- NULL
 
     #Tidy up input data
-    data <- data.table(cbind(data, weight)) #appends weights to list of date ranges, recycling if necessary (e.g. for uniform weight)
+    data <- data.table(cbind(data, weight, a, b)) #appends weights and beta distribution parameters to list of date ranges, recycling if necessary.
 
     #Read start and end dates from input data if not specified
     if(is.null(start.date)) {
@@ -61,7 +63,7 @@ date.simulate <- function(data, probs=1, weight=1, ds.fun=sum, real=TRUE, dummy=
     data <- data[End >= start.date & Start <= end.date]  #drops records outside the date range FROM BOTH SIMULATION SETS
 
     #Aggregate data
-    data <- data[, j=list(weight=sum(as.numeric(weight))), by=c(context.fields, comp.field, "Start", "End")]
+    data <- data[, j=list(weight=sum(as.numeric(weight))), by=c(context.fields, comp.field, "Start", "End", "a", "b")]
     if(length(weight)==1) {data[, weight := 1]}
 
     # Separate comparison groups, if relevant
@@ -93,7 +95,7 @@ date.simulate <- function(data, probs=1, weight=1, ds.fun=sum, real=TRUE, dummy=
     if(real==TRUE) {
 
         #Perform simulation
-        data[, sim := {x <- rbeta(nrow(data), abs(a), abs(b)); (x * (data$End - data$Start)) + data$Start}] #simulates a date for each row
+        data[, sim := {x <- rbeta(nrow(data), abs(data$a), abs(data$b)); (x * (data$End - data$Start)) + data$Start}] #simulates a date for each row
         data[, bin := cut(sim, breaks, labels=labels)] #finds the relevant bin for each simulated date
 
         #Aggregate by bin
