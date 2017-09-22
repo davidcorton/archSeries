@@ -6,8 +6,9 @@
 #' @param probs Numeric vector defining a null model from which to sample the dummy set. Will be recycled up to nrow(data), so passing a
 #'      single value results in a uniform null model. If length > 1 then probs is used to set number of bins, overriding bin.width.
 #'      Defaults to 1.
-#' @param weight Numeric vector: the weight to be applied to each row in `data` (and to its counterpart in the dummy set), or a constant
-#'      weight to be applied to all. Defaults to 1.
+#' @param values Numeric vector: values for each row of `data` (and its counterpart in the dummy set if applicable) to which `ds.fun` will
+#'      be applied, or a constant to be applied to all. With the default `ds.fun` of sum, this is effectively a weighting variable.
+#'      Defaults to 1.
 #' @param ds.fun Function: the summary function to be applied to the entities in each bin during each simulation run. Defaults to sum, i.e.
 #'      calculates frequency distributions, but can be set to e.g. mean or median to deal with e.g. metrical data.
 #' @param real Logical: should the date distribution of the empirical data be simulated? Defaults to TRUE.
@@ -43,15 +44,15 @@
 #' @export
 #' @examples
 #' date.ranges <- data.table(ID=c(1, 2, 3), Start=c(450, 450, 600), End=c(700, 800, 650))
-#' x <- date.simulate(date.ranges, weight=date.ranges$frag.count, context.fields=NULL)
+#' x <- date.simulate(date.ranges, values=date.ranges$frag.count, context.fields=NULL)
 
-date.simulate <- function(data, probs=1, weight=1, ds.fun=sum, real=TRUE, dummy=FALSE, comp.field=NULL, comp.values=NULL, context.fields=c("ID"),
+date.simulate <- function(data, probs=1, values=1, ds.fun=sum, real=TRUE, dummy=FALSE, comp.field=NULL, comp.values=NULL, context.fields=c("ID"),
                           quant.list=c(0.025, 0.25, 0.5, 0.75, 0.975), start.date=NULL, end.date=NULL, a=1, b=1, bin.width=100, reps=100,
                           RoC=NULL, summ=TRUE) {
     End <- Start <- sim <- bin <- .SD <- bin.no <- dummy.bin <- NULL
 
     #Tidy up input data
-    data <- data.table(cbind(data, weight, a, b)) #appends weights and beta distribution parameters to list of date ranges, recycling if necessary.
+    data <- data.table(cbind(data, values, a, b, uniqueID=1:nrow(data))) #appends weights and beta distribution parameters to list of date ranges, recycling if necessary.
 
     #Read start and end dates from input data if not specified
     if(is.null(start.date)) {
@@ -62,16 +63,15 @@ date.simulate <- function(data, probs=1, weight=1, ds.fun=sum, real=TRUE, dummy=
     }
     data <- data[End >= start.date & Start <= end.date]  #drops records outside the date range FROM BOTH SIMULATION SETS
 
-    #Aggregate data
-    data <- data[, j=list(weight=sum(as.numeric(weight))), by=c(context.fields, comp.field, "Start", "End", "a", "b")]
-    if(length(weight)==1) {data[, weight := 1]}
+    #Create table of unique units of analysis (e.g. contexts) for simulation
+    UoA <- data[, j=list(n=length(uniqueID)), by=c(context.fields, comp.field, "Start", "End", "a", "b")]
 
     # Separate comparison groups, if relevant
     if(!is.null(comp.field)) {
-        if(is.null(comp.values)) {comp.values <- unique(data[!get(comp.field)=="" & !is.na(get(comp.field)), get(comp.field)])}
-        data <- data[get(comp.field) %in% comp.values]
-        x <- as.formula(paste(paste(context.fields, collapse="+"), "+Start+End~", comp.field, sep=""))
-        data <- dcast.data.table(data, formula=x, value.var="weight", fill=0)
+        if(is.null(comp.values)) {comp.values <- unique(data[!get(comp.field)=="" & !is.na(get(comp.field)), get(comp.field)])} #if necessary, define comp.values as all unique values of comp.field
+        data <- data[get(comp.field) %in% comp.values]   #filter out categories not to be compared, if any
+        x <- as.formula(paste(paste(context.fields, collapse="+"), "+Start+End+a+b+uniqueID~", comp.field, sep=""))
+        data <- dcast.data.table(data, formula=x, value.var="values", fill=0)
     }
 
     #Reset bin.width based on probs, if necessary
@@ -86,47 +86,58 @@ date.simulate <- function(data, probs=1, weight=1, ds.fun=sum, real=TRUE, dummy=
     }
     probs <- cbind(1:length(labels), probs) #recycles probs to length of labels, if necessary
 
-    #Set up for simulation
+    #Set up UoA table for simulation
+    rep.no <- rep(1:reps, each = nrow(UoA))
+    UoA <- cbind(rep.no, UoA) #recycles UoA table 'reps' times to provide frame for simulation
+
+    #Set up main data table for simulation results
     rep.no <- rep(1:reps, each = nrow(data))
     data <- cbind(rep.no, data) #recycles input data 'reps' times to provide frame for simulation
+
+    #Set up blank frame for results by bin
     results <- data.table(rep.no=rep(1:reps, each=length(labels)), bin.no=rep(1:length(labels), reps), bin=rep(labels, reps))
 
-    #Simulate real data
+    #Simulate real and/or dummy data
     if(real==TRUE) {
-
-        #Perform simulation
-        data[, sim := {x <- rbeta(nrow(data), abs(data$a), abs(data$b)); (x * (data$End - data$Start)) + data$Start}] #simulates a date for each row
-        data[, bin := cut(sim, breaks, labels=labels)] #finds the relevant bin for each simulated date
-
-        #Aggregate by bin
-        if(is.null(comp.field)) {
-            real <- data[is.na(bin)==FALSE, j=list(count=ds.fun(as.numeric(weight))), by=list(rep.no, bin)] #sums weights by bin and rep number
-        } else {
-            real <- data[is.na(bin)==FALSE, lapply(.SD, ds.fun), by=list(rep.no, bin), .SDcols=as.character(comp.values)] #sums weights by bin and rep number
-            setnames(real, old=as.character(comp.values), new=paste(comp.values, ".count", sep=""))
-        }
-
-        #Merge with frame
-        results <- merge(results, real, by=c("rep.no", "bin"), all=TRUE)
+        UoA[, sim := {x <- rbeta(nrow(UoA), abs(UoA$a), abs(UoA$b)); (x * (UoA$End - UoA$Start)) + UoA$Start}] #simulates a date for each row
+        UoA[, bin := cut(sim, breaks, labels=labels)] #finds the relevant bin for each simulated date
     }
 
-    #Simulate dummy set, if required
+    if(dummy==TRUE) {
+        UoA[, dummy.bin := sample(labels, size=nrow(UoA), replace=TRUE, prob=probs[, 2])]
+    }
+
+    #Merge results back into full data
+    data <- merge(data, UoA, by=c("rep.no", context.fields, "Start", "End", "a", "b"))
+
+    #Aggregate real and/or dummy data by bin
+    if(real==TRUE) {
+
+        if(is.null(comp.field)) {
+            real <- data[is.na(bin)==FALSE, j=list(value=ds.fun(as.numeric(values)), n=length(uniqueID)), by=list(rep.no, bin)] #applies ds.fun to values by bin and rep number
+        } else {
+            real <- data[is.na(bin)==FALSE, lapply(.SD, ds.fun), by=list(rep.no, bin), .SDcols=as.character(comp.values)] #applies ds.fun to values by bin and rep number
+            setnames(real, old=as.character(comp.values), new=paste(comp.values, ".value", sep=""))
+        }
+
+        #Merge with results frame
+        results <- merge(results, real, by=c("rep.no", "bin"), all=TRUE)
+
+    }
+
     if(dummy==TRUE) {
 
-        #Perform simulation
-        data[, dummy.bin := sample(labels, size=nrow(data), replace=TRUE, prob=probs[, 2])]
-
-        #Aggregate by bin
         if(is.null(comp.field)) {
-            dummy <- data[, j=list(dummy=ds.fun(as.numeric(weight))), by=list(rep.no, dummy.bin)] #sums weights by bin and rep number
+            dummy <- data[is.na(bin)==FALSE, j=list(dummy=ds.fun(as.numeric(values))), by=list(rep.no, dummy.bin)] #sums weights by bin and rep number
         } else {
             dummy <- data[is.na(bin)==FALSE, lapply(.SD, ds.fun), by=list(rep.no, dummy.bin), .SDcols=as.character(comp.values)] #sums weights by bin and rep number
             setnames(dummy, old=as.character(comp.values), new=paste(comp.values, ".dummy", sep=""))
         }
 
-        #Merge with frame
+        #Merge with results frame
         setnames(dummy, "dummy.bin", "bin")
         results <- merge(results, dummy, by=c("rep.no", "bin"), all=TRUE)
+
     }
 
     #Replace any missing values with 0
@@ -145,3 +156,4 @@ date.simulate <- function(data, probs=1, weight=1, ds.fun=sum, real=TRUE, dummy=
     #Return results
     results
 }
+

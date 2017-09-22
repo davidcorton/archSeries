@@ -27,22 +27,41 @@
 #' box.chron(x, field.list="count")
 
 box.chron <- function(results, field.list=NULL, col.list=c("darkred", "darkgreen", "blue", "grey", "goldenrod"), opacity=255, ylim=NULL,
-                      small.n=NULL, small.n.op=126, add=FALSE, ...) {
+                      small.n=NULL, small.n.op=126, nFun=NULL, add=FALSE, ...) {
     boxes <- NULL
+
+    # Select first element of results list (if appropriate)
     if(class(results)[1]=="list") {
         if(length(results)==3) {boxes <- results$small.n}
         results <- results[[1]]
     }
-    if(is.null(field.list)==TRUE) {field.list <- colnames(results)[!colnames(results)%in%c("bin", "bin.no", "rep.no", "catch", "effort")]}
+
+    # Extract vector of data series names
+    if(is.null(field.list) == TRUE) {field.list <- colnames(results)[!colnames(results) %in% c("bin", "bin.no", "rep.no", "catch", "effort", "n")]}
+
+    # Plot axes
     if(add==FALSE) {axis.setup(results, field.list=field.list, ylim=ylim, ...)}
+
+    # Plot low-sample-size boxes, if requested
+    ## TO BE REMOVED/REPLACED?
     if(!is.null(small.n) & !is.null(boxes)) {grey.zones(boxes, small.n, small.n.op, ylim[length(ylim)])} #Sets up boxes to highlight small n
+
+    # Set up colours for data series
     plist <- data.frame(field.list, col.list[1:length(field.list)], opacity)
     a <- col2rgb(plist[, 2])
     b <- character()
     for(i in 1:nrow(plist)) {
         b[i] <- rgb(a[1, i], a[2, i], a[3, i], plist[i, 3], maxColorValue=255)
     }
+
+    # Plot boxplots
     for(i in 1:length(field.list)) {
-        with(results, boxplot(get(field.list[i]) ~ bin.no, outline=FALSE, xaxt="n", yaxt="n", col=b[i], add=TRUE))
+        b <- with(results, boxplot(get(field.list[i]) ~ bin.no, outline=FALSE, xaxt="n", yaxt="n", col=b[i], add=TRUE))
+    }
+
+    # Add sample-size legend, if requested
+    if(!is.null(nFun)) {
+        nBar <- round(results[, nBar := nFun(n), by="bin.no"]$nBar, 0)
+        text(1:length(nBar), b$stats[5,]*1.1, paste0("n=", nBar))
     }
 }

@@ -36,7 +36,7 @@ poly.chron <- function(results, field.list=NULL, quant=c(0.025, 0.975), col.list
         if(length(results)==3) {boxes <- results$small.n}
         results <- results[[2]]
     }
-    if(is.null(field.list)==TRUE) {field.list <- unique(results$id)}
+    if(is.null(field.list)==TRUE) {field.list <- unique(results$id[!results$id == "n"])}
     if(add==FALSE) {axis.setup(results, field.list=field.list, ylim=ylim, type=2, ...)}
     if(!is.null(small.n) & !is.null(boxes)) {grey.zones(boxes, small.n, small.n.op, ylim[length(ylim)])} #Sets up boxes to highlight small n
     plist <- data.frame(field.list, col.list[1:length(field.list)], opacity)

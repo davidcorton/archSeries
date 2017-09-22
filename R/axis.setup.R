@@ -26,7 +26,7 @@
 #' x <- date.simulate(date.ranges, weight=date.ranges$frags, context.fields=NULL, summ=FALSE)
 #' axis.setup(x, lab.sp=2, type=1)
 
-axis.setup <- function(results, field.list=NULL, lab.sp=1, ylab="Estimated frequency density", xlab="", ylim=NULL,
+axis.setup <- function(results, field.list=NULL, lab.sp=1, ylab="", xlab="", ylim=NULL,
                        type=1, axis.lab=TRUE,...) {
     id <- V1 <- NULL
     if(class(results)[1]=="list") {results <- results[[type]]}
