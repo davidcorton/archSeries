@@ -23,7 +23,7 @@ sim.summ <- function(results, summ.col=NULL, quant.list=c(0.025, 0.25, 0.5, 0.75
     #Create summary tables
     for(i in 1:length(summ.col)) {
         x <- results[, quantile(get(summ.col[i]), probs=quant.list, na.rm=TRUE), by=bin] #calculate quantiles
-        x[, quantile := quant.list] #create column to specify quantiles
+        x[, quantile := rep(quant.list, length.out = nrow(x))] #create column to specify quantiles
         x[, id := summ.col[i]] #create column to specify variable
         if(i==1) {summary <- data.table()}
         summary <- rbind(summary, x)

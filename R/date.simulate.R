@@ -64,14 +64,14 @@ date.simulate <- function(data, probs=1, values=1, ds.fun=sum, real=TRUE, dummy=
     data <- data[End >= start.date & Start <= end.date]  #drops records outside the date range FROM BOTH SIMULATION SETS
 
     #Create table of unique units of analysis (e.g. contexts) for simulation
-    UoA <- data[, j=list(n=length(uniqueID)), by=c(context.fields, comp.field, "Start", "End", "a", "b")]
+    UoA <- data[, j = list( n = length(uniqueID) ), by = c(context.fields, "Start", "End", "a", "b")]
 
     # Separate comparison groups, if relevant
     if(!is.null(comp.field)) {
-        if(is.null(comp.values)) {comp.values <- unique(data[!get(comp.field)=="" & !is.na(get(comp.field)), get(comp.field)])} #if necessary, define comp.values as all unique values of comp.field
-        data <- data[get(comp.field) %in% comp.values]   #filter out categories not to be compared, if any
-        x <- as.formula(paste(paste(context.fields, collapse="+"), "+Start+End+a+b+uniqueID~", comp.field, sep=""))
-        data <- dcast.data.table(data, formula=x, value.var="values", fill=0)
+         if(is.null(comp.values)) {comp.values <- unique(data[!get(comp.field)=="" & !is.na(get(comp.field)), get(comp.field)])} #if necessary, define comp.values as all unique values of comp.field
+         data <- data[get(comp.field) %in% comp.values]   #filter out categories not to be compared, if any
+         x <- as.formula(paste(paste(context.fields, collapse="+"), "+Start+End+a+b+uniqueID~", comp.field, sep=""))
+         data <- dcast.data.table(data, formula=x, value.var="values", fill=0)
     }
 
     #Reset bin.width based on probs, if necessary
@@ -90,7 +90,7 @@ date.simulate <- function(data, probs=1, values=1, ds.fun=sum, real=TRUE, dummy=
     rep.no <- rep(1:reps, each = nrow(UoA))
     UoA <- cbind(rep.no, UoA) #recycles UoA table 'reps' times to provide frame for simulation
 
-    #Set up main data table for simulation results
+    #Set up main data table for simulation results  # SHOULD REDUCE TO JUST NEEDED FIELDS!
     rep.no <- rep(1:reps, each = nrow(data))
     data <- cbind(rep.no, data) #recycles input data 'reps' times to provide frame for simulation
 
@@ -149,7 +149,7 @@ date.simulate <- function(data, probs=1, values=1, ds.fun=sum, real=TRUE, dummy=
 
     #Create summary dataset, if required and return results
     if(summ==TRUE) {
-        summary <- sim.summ(results)
+        summary <- sim.summ(results, quant.list = quant.list)
         results <- list(full=results, summary=summary)
     }
 
